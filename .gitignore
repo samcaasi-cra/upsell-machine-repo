@@ -1,0 +1,16 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+dist/
+build/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Runtime-generated cache from the decision-maker research import flow
+backend/data/decision_makers/*.json

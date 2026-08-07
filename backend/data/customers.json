@@ -1,0 +1,82 @@
+[
+  {
+    "id": "cust01",
+    "name": "Stripe",
+    "domain": "stripe.com",
+    "sponsor": "Head of Vendor Risk",
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "cust02",
+    "name": "Notion Labs",
+    "domain": "notion.so",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "cust03",
+    "name": "Canva",
+    "domain": "canva.com",
+    "sponsor": "VP Information Security",
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "cust04",
+    "name": "Monday.com",
+    "domain": "monday.com",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "cust05",
+    "name": "HubSpot",
+    "domain": "hubspot.com",
+    "sponsor": "Director of Security",
+    "csm": "Leslie Caminade",
+    "notes": "Has a CSM assigned - control example."
+  },
+  {
+    "id": "cust06",
+    "name": "Atlassian",
+    "domain": "atlassian.com",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "cust07",
+    "name": "Klarna",
+    "domain": "klarna.com",
+    "sponsor": "Head of Third Party Risk",
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "cust08",
+    "name": "Monzo Bank",
+    "domain": "monzo.com",
+    "sponsor": null,
+    "csm": "Victor Tarrosa",
+    "notes": "Has a CSM assigned - control example."
+  },
+  {
+    "id": "cust09",
+    "name": "Deliveroo",
+    "domain": "deliveroo.co.uk",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Velocity customer, no CSM currently assigned."
+  },
+  {
+    "id": "1c9305be9d",
+    "name": "Hootsuite",
+    "domain": "hootsuite.com",
+    "sponsor": null,
+    "csm": null,
+    "notes": null
+  }
+]
