@@ -71,19 +71,27 @@ def auto_research_decision_makers(customer_id: str) -> DecisionMakerRecord:
     prompt = decision_maker_prompt.build_prompt(customer.name, customer.domain, existing_names)
 
     queries = [
-        f"{customer.name} CISO OR \"Chief Information Security Officer\" linkedin",
-        f"{customer.name} \"head of information security\" OR \"head of cyber security\" linkedin",
-        f"{customer.name} \"third party risk\" OR \"vendor risk\" OR compliance officer linkedin",
+        f"{customer.name} CISO appointed OR \"Chief Information Security Officer\"",
+        f"{customer.name} \"head of information security\" OR \"head of cyber security\"",
+        f"{customer.name} \"chief risk officer\" OR \"chief compliance officer\" appointed",
     ]
     try:
-        # People move less often than news breaks -- search a wider window. Skip the
-        # news feed here: finding who holds a role is a profile lookup, not a headline.
-        raw = web_research.research_to_json(prompt, queries, recency="y", include_news=False)
+        # People move less often than news breaks, so search a wider window. News is
+        # included because senior security appointments are often announced publicly,
+        # and Google News RSS is the more reliable of our two sources.
+        raw = web_research.research_to_json(prompt, queries, recency="y", include_news=True)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Auto-research failed: {exc}") from exc
 
     if raw is None:
-        return existing or DecisionMakerRecord(domain=customer.domain, people=[])
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Web research returned no usable sources for this company. Public search can be "
+                "rate-limited or thin on named security leadership — use the copy/paste research "
+                "flow, which runs in Claude with proper web search."
+            ),
+        )
 
     try:
         people = decision_maker_prompt.parse_import(raw)

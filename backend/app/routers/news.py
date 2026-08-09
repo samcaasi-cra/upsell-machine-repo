@@ -88,7 +88,13 @@ def auto_research_news(customer_id: str) -> NewsRecord:
         raise HTTPException(status_code=502, detail=f"Auto-research failed: {exc}") from exc
 
     if raw is None:
-        return existing or NewsRecord(domain=customer.domain, events=[])
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Web research returned no usable sources for this company right now. Public search "
+                "can be rate-limited — try again shortly, or use the copy/paste research flow."
+            ),
+        )
 
     try:
         new_events = news_prompt.parse_import(raw)
