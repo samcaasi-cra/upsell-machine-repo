@@ -129,12 +129,44 @@ Open http://localhost:5173.
 
 - **DuckDuckGo rate-limits** under repeated use. Google News RSS keeps working, so news
   research degrades rather than breaks.
-- **Decision-maker auto-research rarely returns anyone.** Not a bug — headlines don't
-  name CISOs, and the prompt is instructed never to guess. Use the copy/paste flow.
+- **Decision-maker auto-research rarely returns anyone.** Not a bug — see below.
 - **Actioned state is session-only**, cleared on reload. Deliberate: matches the
   reference demo, and there's no per-user identity to attribute it to yet.
 - **The scheduler runs in-process**, so it only fires while the backend is up. Fine for
   a hackathon; a real deployment wants cron or a task queue.
+
+---
+
+## Why decision-maker research stays manual
+
+The research prompt is good — it works well when a person runs it in Claude. The
+difference is the *retrieval layer*, not the prompt or the model. Measured, not assumed:
+
+| Source | Server-side result |
+|---|---|
+| Fetching a public LinkedIn profile | **0 characters** — login wall / bot check |
+| DuckDuckGo scrape | **0 results** — rate-limited after modest use |
+| Google News RSS | Works, but reports what a company *does*, not who its CISO *is* |
+
+Run in Claude, the same prompt gets indexed LinkedIn snippets and can search
+iteratively — refining queries based on what it finds. Our pipeline does one
+search → scrape → extract pass over whatever it managed to fetch. When the model
+returned nobody, it was correct: no evidence, and the prompt forbids guessing.
+
+Fixing this needs a real search API, not better prompting. Free tiers as of Aug 2026:
+
+| Provider | Free tier | Verdict |
+|---|---|---|
+| Tavily | 1,000 credits/mo, recurring | Best option; ~at our usage ceiling |
+| Exa | 1,000 requests/mo, recurring | Comparable |
+| Serper | 2,500 one-time trial | Expires, then paid |
+| Google CSE | 100/day, but closed to new signups, EOL 1 Jan 2027 | Not viable |
+| Brave | Free tier removed Feb 2026 | Not viable |
+
+At ~13 customers × 3 queries daily we'd use ~1,170 queries/month — at the ceiling of the
+recurring free tiers with no headroom for growth or on-demand runs, on throttled
+no-SLA plans. Given people change roles only a few times a year, manual research is
+both cheaper and better here. Revisit if the roster grows or the budget appears.
 
 ---
 
