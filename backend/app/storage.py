@@ -10,6 +10,7 @@ from .models import Customer, CustomerCreate, CustomerUpdate, DecisionMakerRecor
 def _ensure_data_dir() -> None:
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     config.DECISION_MAKERS_DIR.mkdir(parents=True, exist_ok=True)
+    config.USAGE_INDIVIDUALS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_customers() -> List[Customer]:
@@ -89,3 +90,20 @@ def save_decision_makers(domain: str, people: List[DecisionMaker]) -> DecisionMa
     )
     _dm_file(domain).write_text(record.model_dump_json(indent=2), encoding="utf-8")
     return record
+
+
+def _usage_individuals_file(customer_id: str):
+    return config.USAGE_INDIVIDUALS_DIR / f"{customer_id}.json"
+
+
+def load_known_individuals(customer_id: str) -> List[str]:
+    _ensure_data_dir()
+    path = _usage_individuals_file(customer_id)
+    if not path.exists():
+        return []
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_known_individuals(customer_id: str, names: List[str]) -> None:
+    _ensure_data_dir()
+    _usage_individuals_file(customer_id).write_text(json.dumps(names, indent=2), encoding="utf-8")

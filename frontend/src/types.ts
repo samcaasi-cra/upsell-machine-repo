@@ -24,6 +24,7 @@ export interface ScoreSummary {
   domain: string;
   current_score: number | null;
   current_grade: string | null;
+  industry: string | null;
   history: ScorePoint[];
   delta_30d: number | null;
   delta_182d: number | null;
@@ -42,7 +43,10 @@ export interface UsageSummary {
   slots_delta_7d: number;
   reports_generated_7d: number;
   reports_delta_7d: number;
+  licensed_slots: number;
+  slots_used: number;
   individuals: UsageIndividual[];
+  new_individuals: string[];
 }
 
 export interface DecisionMaker {

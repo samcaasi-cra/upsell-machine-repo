@@ -37,6 +37,7 @@ class ScoreSummary(BaseModel):
     domain: str
     current_score: Optional[int] = None
     current_grade: Optional[str] = None
+    industry: Optional[str] = None
     history: List[ScorePoint] = Field(default_factory=list)
     delta_30d: Optional[int] = None
     delta_182d: Optional[int] = None
@@ -55,7 +56,10 @@ class UsageSummary(BaseModel):
     slots_delta_7d: int
     reports_generated_7d: int
     reports_delta_7d: int
+    licensed_slots: int
+    slots_used: int
     individuals: List[UsageIndividual]
+    new_individuals: List[str] = Field(default_factory=list)
 
 
 class DecisionMaker(BaseModel):

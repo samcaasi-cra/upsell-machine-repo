@@ -40,7 +40,10 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h2 style={{ margin: "0 0 4px" }}>{customer.name}</h2>
-          <div style={{ color: "var(--text-muted)", fontSize: 13 }}>{customer.domain}</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
+            {customer.domain}
+            {score.industry && ` · ${score.industry.replace(/_/g, " ")}`}
+          </div>
         </div>
         <SignalBadge level={signal.level} />
       </div>

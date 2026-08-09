@@ -139,6 +139,7 @@ def build_score_summary(domain: str) -> ScoreSummary:
 
     current_score = company.get("score")
     current_grade = company.get("grade")
+    industry = company.get("industry")
     today = datetime.today()
 
     score_30d_ago = _score_closest_to(history, today - timedelta(days=30))
@@ -165,6 +166,7 @@ def build_score_summary(domain: str) -> ScoreSummary:
         domain=domain,
         current_score=current_score,
         current_grade=current_grade,
+        industry=industry,
         history=[ScorePoint(**pt) for pt in history],
         delta_30d=delta_30d,
         delta_182d=delta_182d,

@@ -2,6 +2,25 @@ from typing import Optional
 
 from ..models import Customer, DecisionMakerRecord, ScoreSummary, Signal, UsageSummary
 
+
+def industry_top_ids(entries: list[tuple[str, Optional[str], Optional[int]]]) -> set[str]:
+    """Given (customer_id, industry, current_score) tuples, return the customer_ids
+    that hold the top score within their industry -- only for industries with at
+    least 2 tracked customers, so a lone customer isn't trivially "top"."""
+    by_industry: dict[str, list[tuple[str, int]]] = {}
+    for customer_id, industry, score in entries:
+        if industry is None or score is None:
+            continue
+        by_industry.setdefault(industry, []).append((customer_id, score))
+
+    top_ids: set[str] = set()
+    for members in by_industry.values():
+        if len(members) < 2:
+            continue
+        best_id, _ = max(members, key=lambda m: m[1])
+        top_ids.add(best_id)
+    return top_ids
+
 _SCORE_UPSELL_REASONS = {
     "score_up_5_30d": "SSC score up more than 5 points in the last 30 days",
     "score_up_10_182d": "SSC score up more than 10 points in the last 6 months",
@@ -13,11 +32,17 @@ _SCORE_RISK_REASONS = {
 }
 
 
+_ENGAGEMENT_THRESHOLD = 75  # slots_filled_7d*3 + reports_generated_7d + total_visits_7d -- tuned so this
+# only fires for genuinely high-engagement weeks (top ~quartile), not the typical case
+_SLOT_CAPACITY_WARN_PCT = 0.85
+
+
 def build_signal(
     customer: Customer,
     score: ScoreSummary,
     usage: UsageSummary,
     decision_makers: Optional[DecisionMakerRecord],
+    top_in_industry: bool = False,
 ) -> Signal:
     upsell_reasons: list[str] = []
     risk_reasons: list[str] = []
@@ -27,6 +52,10 @@ def build_signal(
             upsell_reasons.append(_SCORE_UPSELL_REASONS[flag])
         elif flag in _SCORE_RISK_REASONS:
             risk_reasons.append(_SCORE_RISK_REASONS[flag])
+
+    if top_in_industry and score.industry:
+        industry_label = score.industry.replace("_", " ")
+        upsell_reasons.append(f"Top SSC score within its industry ({industry_label}) among tracked customers")
 
     total_visits = sum(i.visits_7d for i in usage.individuals)
     if usage.slots_filled_7d == 0 and usage.reports_generated_7d == 0 and total_visits == 0:
@@ -40,6 +69,19 @@ def build_signal(
             upsell_reasons.append(f"Reports generated trending up (+{usage.reports_delta_7d} vs. prior week)")
         elif usage.reports_delta_7d < -3:
             risk_reasons.append(f"Reports generated dropping ({usage.reports_delta_7d} vs. prior week)")
+
+        engagement_score = usage.slots_filled_7d * 3 + usage.reports_generated_7d + total_visits
+        if engagement_score >= _ENGAGEMENT_THRESHOLD:
+            upsell_reasons.append("High platform engagement this week — route to CSM + Sales")
+
+    if usage.licensed_slots > 0 and usage.slots_used / usage.licensed_slots >= _SLOT_CAPACITY_WARN_PCT:
+        upsell_reasons.append(
+            f"Nearing full utilisation of licensed vendor slots ({usage.slots_used}/{usage.licensed_slots} used)"
+        )
+
+    if usage.new_individuals:
+        names = ", ".join(usage.new_individuals)
+        upsell_reasons.append(f"New user(s) logged into SSC for the first time: {names}")
 
     if decision_makers and decision_makers.people:
         new_ciso = [p for p in decision_makers.people if p.status == "new" and p.is_ciso_or_biso]
