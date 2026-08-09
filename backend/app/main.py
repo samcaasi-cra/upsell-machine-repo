@@ -1,9 +1,13 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
+from . import auth
 from .routers import customers, decision_makers, news, opportunities, scores, upsell, usage
 from .services import scheduler, web_research
 
@@ -17,12 +21,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Upsell Machine — Project 5", lifespan=lifespan)
 
+# Extra origins (the deployed frontend) come from the environment; localhost is always
+# allowed so local development needs no configuration.
+_default_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+_extra_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_default_origins + _extra_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registered after CORS so preflight requests are answered before the gate runs.
+app.middleware("http")(auth.auth_middleware)
 
 app.include_router(customers.router)
 app.include_router(scores.router)
@@ -35,7 +47,20 @@ app.include_router(opportunities.router)
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    return {"status": "ok", "auth_required": auth.is_enabled()}
+
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+@app.post("/login")
+def login(payload: LoginRequest) -> dict:
+    if not auth.is_enabled():
+        return {"token": "", "auth_required": False}
+    if not auth.check_password(payload.password):
+        return JSONResponse(status_code=401, content={"detail": "Incorrect password"})
+    return {"token": auth.issue_token(), "auth_required": True}
 
 
 @app.get("/capabilities")

@@ -8,13 +8,35 @@ import type {
   OpportunityBoardResponse,
 } from "../types";
 
-const BASE_URL = "http://localhost:8000";
+// Set VITE_API_BASE_URL at build time to point at a deployed backend; falls back to
+// the local dev server so nothing needs configuring to work locally.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+const TOKEN_KEY = "upsell-machine-token";
+
+export const authToken = {
+  get: () => sessionStorage.getItem(TOKEN_KEY),
+  set: (token: string) => sessionStorage.setItem(TOKEN_KEY, token),
+  clear: () => sessionStorage.removeItem(TOKEN_KEY),
+};
+
+/** Raised on a 401 so the app can drop back to the login screen. */
+export class UnauthorizedError extends Error {}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = authToken.get();
   const resp = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
+  if (resp.status === 401) {
+    authToken.clear();
+    throw new UnauthorizedError("Session expired — please sign in again.");
+  }
   if (!resp.ok) {
     let detail = resp.statusText;
     try {
@@ -30,6 +52,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  checkHealth: () => request<{ status: string; auth_required: boolean }>("/health"),
+  login: (password: string) =>
+    request<{ token: string; auth_required: boolean }>("/login", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
   listSignals: () => request<CustomerSummary[]>("/signals"),
   getOpportunityBoard: (includeConcepts = false) =>
     request<OpportunityBoardResponse>(`/opportunities${includeConcepts ? "?include_concepts=true" : ""}`),

@@ -1,0 +1,42 @@
+# Render blueprint: FastAPI backend + static React frontend.
+#
+# Secrets (API_KEY, OPENAI_API_KEY, APP_PASSWORD) are deliberately NOT in this file --
+# sync: false means Render prompts for them in the dashboard so they never enter git.
+#
+# See DEPLOY.md for the walkthrough.
+
+services:
+  - type: web
+    name: upsell-machine-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: API_KEY # SecurityScorecard
+        sync: false
+      - key: OPENAI_API_KEY # optional -- powers automated research
+        sync: false
+      - key: APP_PASSWORD # shared team password; the gate is off if this is unset
+        sync: false
+      - key: ALLOWED_ORIGINS # set to the frontend URL once it exists
+        sync: false
+
+  - type: web
+    name: upsell-machine
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL # the backend URL from the service above
+        sync: false
+    routes:
+      # SPA fallback so deep links don't 404.
+      - type: rewrite
+        source: /*
+        destination: /index.html

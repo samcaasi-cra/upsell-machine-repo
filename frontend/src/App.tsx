@@ -1,14 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api/client";
+import { api, authToken } from "./api/client";
 import { AddCustomerModal } from "./components/AddCustomerModal";
 import { CustomerDetail } from "./components/CustomerDetail";
 import { CustomerTable } from "./components/CustomerTable";
+import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import type { CustomerSummary } from "./types";
 
 type Tab = "opportunities" | "customers";
 
 function App() {
+  // null = still checking whether this deployment requires a password
+  const [needsAuth, setNeedsAuth] = useState<boolean | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    api
+      .checkHealth()
+      .then((h) => {
+        setNeedsAuth(h.auth_required);
+        if (!h.auth_required || authToken.get()) setSignedIn(true);
+      })
+      .catch(() => setNeedsAuth(false)); // backend unreachable -- let the app surface it
+  }, []);
+
+  if (needsAuth === null) {
+    return <p style={{ padding: 32, color: "var(--text-secondary)" }}>Loading…</p>;
+  }
+  if (needsAuth && !signedIn) {
+    return <LoginScreen onSignedIn={() => setSignedIn(true)} />;
+  }
+
+  return <Dashboard />;
+}
+
+function Dashboard() {
   const [tab, setTab] = useState<Tab>("opportunities");
   const [rows, setRows] = useState<CustomerSummary[]>([]);
   const [loading, setLoading] = useState(true);
