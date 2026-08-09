@@ -30,9 +30,26 @@ The UI labels this everywhere, but to be explicit:
 | Platform usage (logins, slots, reports) | Deterministic placeholder generator | **Sample** — marked `◇ Sample data` |
 | Sponsor / CSM assignment | Seed data | **Sample** — no CRM connected |
 
-Cards built on sample data carry a dashed `◇ Sample data` tag on the card and in the
-email drawer. The Opportunities board has a provenance legend; the Customers table
-marks each column `● live SSC` / `◆ researched` / `◇ sample`.
+### Three tiers, always labelled
+
+| Tier | Meaning | How it looks |
+|---|---|---|
+| **Live** | Real data from a real source | Normal card |
+| **Sample** | Real trigger logic, placeholder *input* data | `◇ Sample data` tag |
+| **Concept** | Trigger not built — an illustration of what it would surface | Dashed striped card, `⚑ Not built — concept`, plus the trigger number and the data source it's waiting on |
+
+The distinction between *sample* and *concept* matters: sample cards run production
+logic on placeholder numbers, concept cards are pure illustration with invented numbers
+and no logic behind them.
+
+**Concept cards are off by default** — the honest view is the one you get without
+thinking about it. Tick *"Show unbuilt triggers as concepts"* in the board legend to
+reveal them, which turns the board into the full 23-trigger product vision. They're
+distributed one per account rather than stamped on every customer, so the board stays
+legible and looks like a realistic spread of activity.
+
+The Opportunities board carries a provenance legend; the Customers table marks each
+column `● live SSC` / `◆ researched` / `◇ sample`.
 
 ---
 
@@ -62,6 +79,9 @@ drive ARR growth"*.
 Trigger #3 currently surfaces on the Customers table only, not as a board card.
 
 ### Not built — blocked on data or access
+
+Each of these has a **concept card** in the UI (toggle them on in the board legend)
+showing what it would surface once the data source exists.
 
 | # | Trigger | What it needs |
 |---|---|---|
@@ -150,7 +170,10 @@ to demo research populating from empty. Only touches `backend/data/`; never cred
    they're labelled.
 4. **Customers tab** → a customer detail: live SSC score chart, then the News panel
    showing automatically-researched events.
-5. **Close on the architecture point**: every gap is a connection, not a rebuild — news
+5. **Back to the board, tick "Show unbuilt triggers as concepts"** — the board becomes
+   the full 23-trigger vision. Each concept card names the trigger and the exact data
+   source it's waiting on, which turns "what's missing" into a concrete shopping list.
+6. **Close on the architecture point**: every gap is a connection, not a rebuild — news
    already made exactly that transition from manual to automated with no prompt or
    parser changes.
 

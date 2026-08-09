@@ -31,7 +31,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listSignals: () => request<CustomerSummary[]>("/signals"),
-  getOpportunityBoard: () => request<OpportunityBoardResponse>("/opportunities"),
+  getOpportunityBoard: (includeConcepts = false) =>
+    request<OpportunityBoardResponse>(`/opportunities${includeConcepts ? "?include_concepts=true" : ""}`),
   getOverview: (customerId: string) => request<CustomerOverview>(`/customers/${customerId}/overview`),
   createCustomer: (payload: CustomerCreate) =>
     request<Customer>("/customers", { method: "POST", body: JSON.stringify(payload) }),

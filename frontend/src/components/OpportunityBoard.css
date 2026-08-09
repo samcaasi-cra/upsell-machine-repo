@@ -376,6 +376,44 @@
   padding: 1px 5px;
 }
 
+/* Concept cards illustrate unbuilt triggers. Deliberately styled so they can never be
+   mistaken for real signals: faded, dashed border, and an explicit "not built" tag. */
+.opp-ticket[data-source="concept"] {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--surface),
+    var(--surface) 10px,
+    var(--surface-2) 10px,
+    var(--surface-2) 20px
+  );
+  opacity: 0.85;
+}
+.opp-ticket[data-source="concept"]::before {
+  display: none; /* no perforation -- these aren't real tickets */
+}
+.opp-concept-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--amber);
+  background: rgba(217, 142, 43, 0.14);
+  color: var(--amber-ink);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.opp-concept-note {
+  font-size: 0.6rem;
+  color: var(--slate);
+  margin-top: 3px;
+  font-style: italic;
+}
+
 .opp-legend {
   display: flex;
   flex-wrap: wrap;

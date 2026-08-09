@@ -49,14 +49,15 @@ export function OpportunityBoard() {
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [actioned, setActioned] = useState<Set<string>>(new Set());
   const [research, setResearch] = useState<Awaited<ReturnType<typeof api.getResearchStatus>> | null>(null);
+  const [showConcepts, setShowConcepts] = useState(false);
 
   const loadBoard = useCallback(() => {
     api
-      .getOpportunityBoard()
+      .getOpportunityBoard(showConcepts)
       .then(setBoard)
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [showConcepts]);
 
   useEffect(() => {
     loadBoard();
@@ -171,6 +172,20 @@ export function OpportunityBoard() {
         <strong style={{ fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
           Where this data comes from
         </strong>
+        <label
+          style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", marginLeft: "auto" }}
+          title="Show illustrative cards for triggers from the brief that aren't built yet"
+        >
+          <input
+            type="checkbox"
+            checked={showConcepts}
+            onChange={(e) => {
+              setShowConcepts(e.target.checked);
+              setLoading(true);
+            }}
+          />
+          Show unbuilt triggers as concepts
+        </label>
         <span className="opp-legend-item">
           <span className="opp-legend-swatch" style={{ background: "var(--moss)" }} />
           SSC scores, industry &amp; supplier detection — live API
@@ -244,6 +259,7 @@ function Ticket({ card, actioned, onOpen }: { card: OpportunityCard; actioned: b
       tabIndex={0}
       role="button"
       data-actioned={actioned}
+      data-source={card.data_source}
       aria-label={`Open drafted email for ${card.customer_name}`}
       onClick={onOpen}
       onKeyDown={(e) => {
@@ -262,6 +278,14 @@ function Ticket({ card, actioned, onOpen }: { card: OpportunityCard; actioned: b
           <span className="opp-sample-tag" title="Built from placeholder platform-usage data, not a live feed">
             ◇ Sample data
           </span>
+        </div>
+      )}
+      {card.data_source === "concept" && (
+        <div style={{ marginTop: 6 }}>
+          <span className="opp-concept-tag" title="This trigger isn't built yet — illustrative only">
+            ⚑ Not built — concept
+          </span>
+          {card.concept_trigger && <div className="opp-concept-note">Trigger {card.concept_trigger}</div>}
         </div>
       )}
       {card.badge && <span className="opp-ticket-badge">{card.badge}</span>}

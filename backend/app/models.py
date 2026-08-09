@@ -146,9 +146,11 @@ class CustomerSummary(BaseModel):
 
 OpportunityGroup = Literal["proof", "adoption", "expansion", "engagement"]
 Sentiment = Literal["good", "watch", "info"]
-# "live"   = derived from a real external source (SSC API, imported research)
-# "sample" = derived from the placeholder platform-usage generator
-DataSource = Literal["live", "sample"]
+# "live"    = derived from a real external source (SSC API, imported research)
+# "sample"  = real trigger logic, placeholder input data (the usage generator)
+# "concept" = the trigger isn't built; an illustration of what it would surface once
+#             the underlying data source exists. Hidden unless explicitly requested.
+DataSource = Literal["live", "sample", "concept"]
 
 
 class RecipientOption(BaseModel):
@@ -166,6 +168,8 @@ class OpportunityCard(BaseModel):
     label: str
     sentiment: Sentiment
     data_source: DataSource = "live"
+    # For concept cards: which trigger from the brief this illustrates, e.g. "#9".
+    concept_trigger: Optional[str] = None
     badge: Optional[str] = None
     description: str
     detected_at: str

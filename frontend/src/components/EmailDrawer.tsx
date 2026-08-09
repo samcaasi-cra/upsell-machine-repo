@@ -123,6 +123,15 @@ export function EmailDrawer({
               </span>
             </p>
           )}
+          {card.data_source === "concept" && (
+            <p style={{ margin: "0 0 10px" }}>
+              <span className="opp-concept-tag">⚑ Not built — concept</span>{" "}
+              <span style={{ fontSize: "0.72rem", color: "var(--slate)" }}>
+                Illustrative only. Every number here is invented.
+                {card.concept_trigger ? ` Trigger ${card.concept_trigger}.` : ""}
+              </span>
+            </p>
+          )}
 
           {editing ? (
             <textarea

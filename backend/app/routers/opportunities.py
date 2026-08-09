@@ -4,6 +4,7 @@ from .. import storage
 from ..models import AccountChip, NewsRecord, OpportunityBoardResponse
 from ..services import signals
 from ..services.aggregation import gather_all_customer_data
+from ..services.concept_triggers import build_concept_cards
 from ..services.opportunities import build_opportunity_cards, grade_sentiment
 
 router = APIRouter(tags=["opportunities"])
@@ -44,7 +45,9 @@ def _build_person_customer_map(entries) -> dict[str, list[str]]:
 
 
 @router.get("/opportunities", response_model=OpportunityBoardResponse)
-def get_opportunity_board() -> OpportunityBoardResponse:
+def get_opportunity_board(include_concepts: bool = False) -> OpportunityBoardResponse:
+    """`include_concepts` adds illustrative cards for triggers from the brief that
+    aren't built yet. Off by default so the honest view is the default."""
     entries = gather_all_customer_data()
     industry_stats_map = signals.industry_stats([(c.id, s.industry, s.current_score) for c, s, _, _ in entries])
     industry_declines = _build_industry_declines(entries)
@@ -53,7 +56,7 @@ def get_opportunity_board() -> OpportunityBoardResponse:
     all_cards = []
     cards_by_customer: dict[str, int] = {}
     chips: list[AccountChip] = []
-    for customer, score, usage, dm_record in entries:
+    for roster_index, (customer, score, usage, dm_record) in enumerate(entries):
         news_record = storage.load_news_events(customer.domain) or NewsRecord(domain=customer.domain, events=[])
         cards = build_opportunity_cards(
             customer,
@@ -65,6 +68,10 @@ def get_opportunity_board() -> OpportunityBoardResponse:
             industry_declines,
             person_customer_map,
         )
+        if include_concepts:
+            cards = cards + build_concept_cards(
+                customer, score, dm_record, roster_index=roster_index, roster_size=len(entries)
+            )
         all_cards.extend(cards)
         cards_by_customer[customer.id] = len(cards)
         chips.append(
