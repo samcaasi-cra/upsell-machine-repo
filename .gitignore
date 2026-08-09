@@ -18,3 +18,7 @@ backend/data/decision_makers/*.json
 # Runtime-generated cache tracking which individuals have already been seen per
 # customer, used to detect first-time logins
 backend/data/usage_individuals/*.json
+
+# Runtime-generated cache from the news research import flow (acquisitions,
+# new offices, product launches)
+backend/data/news_events/*.json

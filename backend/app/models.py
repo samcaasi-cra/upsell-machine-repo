@@ -88,6 +88,30 @@ class DecisionMakerRecord(BaseModel):
     people: List[DecisionMaker] = Field(default_factory=list)
 
 
+NewsEventType = Literal["acquisition", "new_office", "product_launch"]
+
+
+class NewsEvent(BaseModel):
+    event_type: NewsEventType
+    headline: str
+    date: str
+    summary: str
+    source_url: Optional[str] = None
+
+
+class NewsEventsImportRequest(BaseModel):
+    """Either raw pasted text (parsed server-side) or an already-structured events list."""
+
+    text: Optional[str] = None
+    events: Optional[List[NewsEvent]] = None
+
+
+class NewsRecord(BaseModel):
+    domain: str
+    imported_at: Optional[str] = None
+    events: List[NewsEvent] = Field(default_factory=list)
+
+
 SignalLevel = Literal["upsell", "retention_risk", "neutral"]
 
 
@@ -103,6 +127,7 @@ class CustomerOverview(BaseModel):
     score: ScoreSummary
     usage: UsageSummary
     decision_makers: DecisionMakerRecord
+    news: NewsRecord
     signal: Signal
 
 
@@ -117,3 +142,40 @@ class CustomerSummary(BaseModel):
     usage: UsageSummary
     decision_maker_count: int
     signal: Signal
+
+
+OpportunityGroup = Literal["proof", "adoption", "expansion", "engagement"]
+Sentiment = Literal["good", "watch", "info"]
+
+
+class OpportunityCard(BaseModel):
+    card_id: str
+    group: OpportunityGroup
+    customer_id: str
+    customer_name: str
+    industry: Optional[str] = None
+    value: str
+    label: str
+    sentiment: Sentiment
+    badge: Optional[str] = None
+    description: str
+    detected_at: str
+    recipient_name: str
+    recipient_role: str
+    subject: str
+    body: str
+
+
+class AccountChip(BaseModel):
+    customer_id: str
+    customer_name: str
+    industry: Optional[str] = None
+    score: Optional[int] = None
+    grade: Optional[str] = None
+    sentiment: Sentiment
+    open_opportunities: int
+
+
+class OpportunityBoardResponse(BaseModel):
+    chips: List[AccountChip]
+    cards: List[OpportunityCard]

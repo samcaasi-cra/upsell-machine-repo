@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import customers, decision_makers, scores, upsell, usage
+from .routers import customers, decision_makers, news, opportunities, scores, upsell, usage
 
 app = FastAPI(title="Upsell Machine — Project 5")
 
@@ -16,7 +16,9 @@ app.include_router(customers.router)
 app.include_router(scores.router)
 app.include_router(usage.router)
 app.include_router(decision_makers.router)
+app.include_router(news.router)
 app.include_router(upsell.router)
+app.include_router(opportunities.router)
 
 
 @app.get("/health")

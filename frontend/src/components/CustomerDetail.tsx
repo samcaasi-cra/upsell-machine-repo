@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api } from "../api/client";
 import type { CustomerOverview } from "../types";
 import { DecisionMakerPanel } from "./DecisionMakerPanel";
-import { ResearchModal } from "./ResearchModal";
+import { NewsPanel } from "./NewsPanel";
+import { PromptImportModal } from "./PromptImportModal";
 import { ScoreBadge } from "./ScoreBadge";
 import { ScoreChart } from "./ScoreChart";
 import { SignalBadge } from "./SignalBadge";
@@ -11,7 +12,8 @@ import { UsagePanel } from "./UsagePanel";
 export function CustomerDetail({ customerId, onBack }: { customerId: string; onBack: () => void }) {
   const [overview, setOverview] = useState<CustomerOverview | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showResearch, setShowResearch] = useState(false);
+  const [showDecisionMakerResearch, setShowDecisionMakerResearch] = useState(false);
+  const [showNewsResearch, setShowNewsResearch] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -29,7 +31,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
     return <p style={{ color: "var(--text-secondary)" }}>Loading…</p>;
   }
 
-  const { customer, score, usage, decision_makers, signal } = overview;
+  const { customer, score, usage, decision_makers, news, signal } = overview;
 
   return (
     <div>
@@ -79,14 +81,31 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
       </Section>
 
       <Section title="Decision-makers">
-        <DecisionMakerPanel record={decision_makers} onOpenResearch={() => setShowResearch(true)} />
+        <DecisionMakerPanel record={decision_makers} onOpenResearch={() => setShowDecisionMakerResearch(true)} />
       </Section>
 
-      {showResearch && (
-        <ResearchModal
-          customerId={customer.id}
-          customerName={customer.name}
-          onClose={() => setShowResearch(false)}
+      <Section title="News (acquisitions, new offices, product launches)">
+        <NewsPanel record={news} onOpenResearch={() => setShowNewsResearch(true)} />
+      </Section>
+
+      {showDecisionMakerResearch && (
+        <PromptImportModal
+          title={`Research decision-makers — ${customer.name}`}
+          placeholder='{"people": [...]}'
+          getPrompt={() => api.getDecisionMakerPrompt(customer.id)}
+          onImport={(text) => api.importDecisionMakers(customer.id, text).then(() => undefined)}
+          onClose={() => setShowDecisionMakerResearch(false)}
+          onImported={load}
+        />
+      )}
+
+      {showNewsResearch && (
+        <PromptImportModal
+          title={`Research news — ${customer.name}`}
+          placeholder='{"events": [...]}'
+          getPrompt={() => api.getNewsPrompt(customer.id)}
+          onImport={(text) => api.importNews(customer.id, text).then(() => undefined)}
+          onClose={() => setShowNewsResearch(false)}
           onImported={load}
         />
       )}

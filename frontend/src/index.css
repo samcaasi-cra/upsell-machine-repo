@@ -15,6 +15,10 @@
   --status-serious: #ec835a;
   --status-critical: #d03b3b;
   --delta-good: #006300;
+  --cat-proof-of-value: #2a78d6;
+  --cat-adoption-signals: #eb6834;
+  --cat-expansion-events: #1baf7a;
+  --cat-engagement-prompts: #4a3aa7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,6 +39,10 @@
     --status-serious: #ec835a;
     --status-critical: #e66767;
     --delta-good: #0ca30c;
+    --cat-proof-of-value: #3987e5;
+    --cat-adoption-signals: #d95926;
+    --cat-expansion-events: #199e70;
+    --cat-engagement-prompts: #9085e9;
   }
 }
 
@@ -55,6 +63,10 @@
   --status-serious: #ec835a;
   --status-critical: #e66767;
   --delta-good: #0ca30c;
+  --cat-proof-of-value: #3987e5;
+  --cat-adoption-signals: #d95926;
+  --cat-expansion-events: #199e70;
+  --cat-engagement-prompts: #9085e9;
 }
 
 * {

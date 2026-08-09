@@ -4,13 +4,14 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from . import config
-from .models import Customer, CustomerCreate, CustomerUpdate, DecisionMakerRecord, DecisionMaker
+from .models import Customer, CustomerCreate, CustomerUpdate, DecisionMakerRecord, DecisionMaker, NewsEvent, NewsRecord
 
 
 def _ensure_data_dir() -> None:
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     config.DECISION_MAKERS_DIR.mkdir(parents=True, exist_ok=True)
     config.USAGE_INDIVIDUALS_DIR.mkdir(parents=True, exist_ok=True)
+    config.NEWS_EVENTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_customers() -> List[Customer]:
@@ -107,3 +108,27 @@ def load_known_individuals(customer_id: str) -> List[str]:
 def save_known_individuals(customer_id: str, names: List[str]) -> None:
     _ensure_data_dir()
     _usage_individuals_file(customer_id).write_text(json.dumps(names, indent=2), encoding="utf-8")
+
+
+def _news_file(domain: str):
+    safe = domain.replace("/", "_")
+    return config.NEWS_EVENTS_DIR / f"{safe}.json"
+
+
+def load_news_events(domain: str) -> Optional[NewsRecord]:
+    _ensure_data_dir()
+    path = _news_file(domain)
+    if not path.exists():
+        return None
+    return NewsRecord(**json.loads(path.read_text(encoding="utf-8")))
+
+
+def save_news_events(domain: str, events: List[NewsEvent]) -> NewsRecord:
+    _ensure_data_dir()
+    record = NewsRecord(
+        domain=domain,
+        imported_at=datetime.now(timezone.utc).isoformat(),
+        events=events,
+    )
+    _news_file(domain).write_text(record.model_dump_json(indent=2), encoding="utf-8")
+    return record

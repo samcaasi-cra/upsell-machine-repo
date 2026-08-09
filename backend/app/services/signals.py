@@ -7,19 +7,26 @@ def industry_top_ids(entries: list[tuple[str, Optional[str], Optional[int]]]) ->
     """Given (customer_id, industry, current_score) tuples, return the customer_ids
     that hold the top score within their industry -- only for industries with at
     least 2 tracked customers, so a lone customer isn't trivially "top"."""
+    return {stats["top_id"] for stats in industry_stats(entries).values()}
+
+
+def industry_stats(entries: list[tuple[str, Optional[str], Optional[int]]]) -> dict[str, dict]:
+    """Given (customer_id, industry, current_score) tuples, group by industry (only
+    groups with >=2 tracked customers) and return {industry: {top_id, top_score, avg}}."""
     by_industry: dict[str, list[tuple[str, int]]] = {}
     for customer_id, industry, score in entries:
         if industry is None or score is None:
             continue
         by_industry.setdefault(industry, []).append((customer_id, score))
 
-    top_ids: set[str] = set()
-    for members in by_industry.values():
+    stats: dict[str, dict] = {}
+    for industry, members in by_industry.items():
         if len(members) < 2:
             continue
-        best_id, _ = max(members, key=lambda m: m[1])
-        top_ids.add(best_id)
-    return top_ids
+        best_id, best_score = max(members, key=lambda m: m[1])
+        avg = sum(s for _, s in members) / len(members)
+        stats[industry] = {"top_id": best_id, "top_score": best_score, "avg": avg}
+    return stats
 
 _SCORE_UPSELL_REASONS = {
     "score_up_5_30d": "SSC score up more than 5 points in the last 30 days",

@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/client";
 
-export function ResearchModal({
-  customerId,
-  customerName,
+export function PromptImportModal({
+  title,
+  placeholder,
+  getPrompt,
+  onImport,
   onClose,
   onImported,
 }: {
-  customerId: string;
-  customerName: string;
+  title: string;
+  placeholder: string;
+  getPrompt: () => Promise<{ prompt: string }>;
+  onImport: (text: string) => Promise<void>;
   onClose: () => void;
   onImported: () => void;
 }) {
@@ -20,11 +23,11 @@ export function ResearchModal({
   const [importError, setImportError] = useState<string | null>(null);
 
   useEffect(() => {
-    api
-      .getDecisionMakerPrompt(customerId)
+    getPrompt()
       .then((res) => setPrompt(res.prompt))
       .finally(() => setLoadingPrompt(false));
-  }, [customerId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(prompt);
@@ -36,7 +39,7 @@ export function ResearchModal({
     setImporting(true);
     setImportError(null);
     try {
-      await api.importDecisionMakers(customerId, pasteText);
+      await onImport(pasteText);
       onImported();
       onClose();
     } catch (err) {
@@ -74,7 +77,7 @@ export function ResearchModal({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0 }}>Research decision-makers — {customerName}</h3>
+          <h3 style={{ margin: 0 }}>{title}</h3>
           <button onClick={onClose} style={{ border: "none", background: "none", fontSize: 18, cursor: "pointer" }}>
             ×
           </button>
@@ -114,7 +117,7 @@ export function ResearchModal({
           <textarea
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            placeholder='{"people": [...]}'
+            placeholder={placeholder}
             style={{
               width: "100%",
               height: 140,

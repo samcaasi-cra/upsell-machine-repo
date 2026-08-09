@@ -84,10 +84,63 @@ export interface CustomerSummary {
   signal: Signal;
 }
 
+export type NewsEventType = "acquisition" | "new_office" | "product_launch";
+
+export interface NewsEvent {
+  event_type: NewsEventType;
+  headline: string;
+  date: string;
+  summary: string;
+  source_url: string | null;
+}
+
+export interface NewsRecord {
+  domain: string;
+  imported_at: string | null;
+  events: NewsEvent[];
+}
+
 export interface CustomerOverview {
   customer: Customer;
   score: ScoreSummary;
   usage: UsageSummary;
   decision_makers: DecisionMakerRecord;
+  news: NewsRecord;
   signal: Signal;
+}
+
+export type OpportunityGroup = "proof" | "adoption" | "expansion" | "engagement";
+export type Sentiment = "good" | "watch" | "info";
+
+export interface OpportunityCard {
+  card_id: string;
+  group: OpportunityGroup;
+  customer_id: string;
+  customer_name: string;
+  industry: string | null;
+  value: string;
+  label: string;
+  sentiment: Sentiment;
+  badge: string | null;
+  description: string;
+  detected_at: string;
+  recipient_name: string;
+  recipient_role: string;
+  subject: string;
+  body: string;
+}
+
+export interface AccountChip {
+  customer_id: string;
+  customer_name: string;
+  industry: string | null;
+  score: number | null;
+  grade: string | null;
+  sentiment: Sentiment;
+  open_opportunities: number;
+}
+
+export interface OpportunityBoardResponse {
+  chips: AccountChip[];
+  cards: OpportunityCard[];
 }
