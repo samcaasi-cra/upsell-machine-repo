@@ -15,6 +15,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -29,6 +31,24 @@ function App() {
   useEffect(() => {
     if (tab === "customers") load();
   }, [tab, load]);
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const result = await api.syncFromPortfolio();
+      setSyncMessage(
+        result.added_count > 0
+          ? `Added ${result.added_count} customer${result.added_count === 1 ? "" : "s"} from the portfolio.`
+          : "Already up to date with the portfolio."
+      );
+      load();
+    } catch (err) {
+      setSyncMessage(`Sync failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <div style={{ maxWidth: 1320, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -65,24 +85,48 @@ function App() {
             ))}
           </nav>
           {tab === "customers" && !selectedId && (
-            <button
-              onClick={() => setShowAdd(true)}
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                padding: "8px 14px",
-                borderRadius: 8,
-                border: "none",
-                background: "var(--series-1)",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              + Add customer
-            </button>
+            <>
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface-2)",
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                }}
+              >
+                {syncing ? "Syncing…" : "Sync from portfolio"}
+              </button>
+              <button
+                onClick={() => setShowAdd(true)}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "var(--series-1)",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                + Add customer
+              </button>
+            </>
           )}
         </div>
       </header>
+
+      {tab === "customers" && syncMessage && (
+        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: -8, marginBottom: 12 }}>
+          {syncMessage}
+        </p>
+      )}
 
       {tab === "opportunities" ? (
         <OpportunityBoard />

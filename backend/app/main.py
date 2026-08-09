@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import customers, decision_makers, news, opportunities, scores, upsell, usage
+from .services import web_research
 
 app = FastAPI(title="Upsell Machine — Project 5")
 
@@ -24,3 +25,9 @@ app.include_router(opportunities.router)
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/capabilities")
+def capabilities() -> dict:
+    """Lets the UI show or disable features that depend on optional configuration."""
+    return {"auto_research": web_research.is_configured()}

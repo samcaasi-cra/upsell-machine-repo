@@ -72,16 +72,35 @@ def get_or_create_portfolio() -> str:
 
 
 def ensure_domain_in_portfolio(domain: str) -> None:
+    """Best-effort: adding a domain is only a prerequisite for score lookups, so a
+    failure here must not abort the read. SSC returns 400 when the domain is already
+    in the portfolio (e.g. added through its own UI), which is a success case for us."""
     if domain in _domains_in_portfolio:
         return
+    try:
+        portfolio_id = get_or_create_portfolio()
+        requests.put(
+            f"{config.SSC_BASE_URL}/portfolios/{portfolio_id}/companies/{domain}",
+            headers=_HEADERS,
+            timeout=_TIMEOUT,
+        )
+    except requests.RequestException:
+        pass
+    _domains_in_portfolio.add(domain)
+
+
+def list_portfolio_companies() -> list[dict]:
+    """All companies currently in the dashboard's shared portfolio, via
+    GET /portfolios/{id}/companies -- lets us pick up domains added directly through
+    the SSC UI rather than through the app's "Add customer" form."""
     portfolio_id = get_or_create_portfolio()
-    resp = requests.put(
-        f"{config.SSC_BASE_URL}/portfolios/{portfolio_id}/companies/{domain}",
+    resp = requests.get(
+        f"{config.SSC_BASE_URL}/portfolios/{portfolio_id}/companies",
         headers=_HEADERS,
         timeout=_TIMEOUT,
     )
     resp.raise_for_status()
-    _domains_in_portfolio.add(domain)
+    return resp.json().get("entries", [])
 
 
 def get_company(domain: str) -> dict:

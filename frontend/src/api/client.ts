@@ -35,6 +35,11 @@ export const api = {
   getOverview: (customerId: string) => request<CustomerOverview>(`/customers/${customerId}/overview`),
   createCustomer: (payload: CustomerCreate) =>
     request<Customer>("/customers", { method: "POST", body: JSON.stringify(payload) }),
+  syncFromPortfolio: () =>
+    request<{ added: Customer[]; added_count: number; portfolio_size: number }>(
+      "/customers/sync-from-portfolio",
+      { method: "POST" }
+    ),
   getDecisionMakerPrompt: (customerId: string) =>
     request<{ prompt: string }>(`/customers/${customerId}/decision-makers/prompt`),
   importDecisionMakers: (customerId: string, text: string) =>
@@ -48,4 +53,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ text }),
     }),
+  getCapabilities: () => request<{ auto_research: boolean }>("/capabilities"),
+  autoResearchDecisionMakers: (customerId: string) =>
+    request<DecisionMakerRecord>(`/customers/${customerId}/decision-makers/auto-research`, { method: "POST" }),
+  autoResearchNews: (customerId: string) =>
+    request<NewsRecord>(`/customers/${customerId}/news/auto-research`, { method: "POST" }),
 };

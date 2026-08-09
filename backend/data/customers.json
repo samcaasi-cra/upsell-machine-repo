@@ -78,5 +78,29 @@
     "sponsor": null,
     "csm": null,
     "notes": null
+  },
+  {
+    "id": "d5585b7b67",
+    "name": "gov.uk",
+    "domain": "gov.uk",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Imported from the SecurityScorecard portfolio."
+  },
+  {
+    "id": "d582bee60e",
+    "name": "Schwyzer Kantonalbank",
+    "domain": "szkb.ch",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Imported from the SecurityScorecard portfolio."
+  },
+  {
+    "id": "2aa3a21b26",
+    "name": "Hennypenny",
+    "domain": "hennypenny.com",
+    "sponsor": null,
+    "csm": null,
+    "notes": "Imported from the SecurityScorecard portfolio."
   }
 ]

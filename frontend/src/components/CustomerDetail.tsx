@@ -14,6 +14,12 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
   const [loading, setLoading] = useState(true);
   const [showDecisionMakerResearch, setShowDecisionMakerResearch] = useState(false);
   const [showNewsResearch, setShowNewsResearch] = useState(false);
+  const [autoResearchAvailable, setAutoResearchAvailable] = useState(false);
+  const [autoBusy, setAutoBusy] = useState<"dm" | "news" | null>(null);
+  const [autoError, setAutoError] = useState<{ dm: string | null; news: string | null }>({
+    dm: null,
+    news: null,
+  });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -26,6 +32,27 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    api
+      .getCapabilities()
+      .then((c) => setAutoResearchAvailable(c.auto_research))
+      .catch(() => setAutoResearchAvailable(false));
+  }, []);
+
+  async function runAutoResearch(kind: "dm" | "news") {
+    setAutoBusy(kind);
+    setAutoError((prev) => ({ ...prev, [kind]: null }));
+    try {
+      if (kind === "dm") await api.autoResearchDecisionMakers(customerId);
+      else await api.autoResearchNews(customerId);
+      load();
+    } catch (err) {
+      setAutoError((prev) => ({ ...prev, [kind]: err instanceof Error ? err.message : String(err) }));
+    } finally {
+      setAutoBusy(null);
+    }
+  }
 
   if (loading || !overview) {
     return <p style={{ color: "var(--text-secondary)" }}>Loading…</p>;
@@ -81,11 +108,25 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
       </Section>
 
       <Section title="Decision-makers">
-        <DecisionMakerPanel record={decision_makers} onOpenResearch={() => setShowDecisionMakerResearch(true)} />
+        <DecisionMakerPanel
+          record={decision_makers}
+          onOpenResearch={() => setShowDecisionMakerResearch(true)}
+          onAutoResearch={() => runAutoResearch("dm")}
+          autoResearchAvailable={autoResearchAvailable}
+          autoResearching={autoBusy === "dm"}
+          autoResearchError={autoError.dm}
+        />
       </Section>
 
       <Section title="News (acquisitions, new offices, product launches)">
-        <NewsPanel record={news} onOpenResearch={() => setShowNewsResearch(true)} />
+        <NewsPanel
+          record={news}
+          onOpenResearch={() => setShowNewsResearch(true)}
+          onAutoResearch={() => runAutoResearch("news")}
+          autoResearchAvailable={autoResearchAvailable}
+          autoResearching={autoBusy === "news"}
+          autoResearchError={autoError.news}
+        />
       </Section>
 
       {showDecisionMakerResearch && (

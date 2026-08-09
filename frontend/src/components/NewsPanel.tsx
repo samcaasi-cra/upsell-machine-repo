@@ -7,7 +7,21 @@ const EVENT_TYPE_LABEL: Record<NewsEventType, string> = {
   product_launch: "Product launch",
 };
 
-export function NewsPanel({ record, onOpenResearch }: { record: NewsRecord; onOpenResearch: () => void }) {
+export function NewsPanel({
+  record,
+  onOpenResearch,
+  onAutoResearch,
+  autoResearchAvailable,
+  autoResearching,
+  autoResearchError,
+}: {
+  record: NewsRecord;
+  onOpenResearch: () => void;
+  onAutoResearch: () => void;
+  autoResearchAvailable: boolean;
+  autoResearching: boolean;
+  autoResearchError: string | null;
+}) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -16,10 +30,32 @@ export function NewsPanel({ record, onOpenResearch }: { record: NewsRecord; onOp
             ? `Last researched ${new Date(record.imported_at).toLocaleString()}`
             : "Not researched yet"}
         </div>
-        <button onClick={onOpenResearch} style={buttonStyle}>
-          {record.events.length > 0 ? "Refresh research" : "Research news"}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={onAutoResearch}
+            disabled={!autoResearchAvailable || autoResearching}
+            title={
+              autoResearchAvailable
+                ? "Search the web and extract results automatically"
+                : "Needs an OPENAI_API_KEY in backend/.env"
+            }
+            style={{
+              ...buttonStyle,
+              opacity: autoResearchAvailable ? 1 : 0.5,
+              cursor: autoResearchAvailable && !autoResearching ? "pointer" : "not-allowed",
+            }}
+          >
+            {autoResearching ? "Researching…" : "Auto-research"}
+          </button>
+          <button onClick={onOpenResearch} style={buttonStyle}>
+            {record.events.length > 0 ? "Refresh research" : "Research news"}
+          </button>
+        </div>
       </div>
+
+      {autoResearchError && (
+        <p style={{ fontSize: 13, color: "var(--status-critical)", marginTop: 0 }}>{autoResearchError}</p>
+      )}
 
       {record.events.length === 0 ? (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>

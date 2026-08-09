@@ -4,9 +4,17 @@ import type { DecisionMakerRecord } from "../types";
 export function DecisionMakerPanel({
   record,
   onOpenResearch,
+  onAutoResearch,
+  autoResearchAvailable,
+  autoResearching,
+  autoResearchError,
 }: {
   record: DecisionMakerRecord;
   onOpenResearch: () => void;
+  onAutoResearch: () => void;
+  autoResearchAvailable: boolean;
+  autoResearching: boolean;
+  autoResearchError: string | null;
 }) {
   return (
     <div>
@@ -16,10 +24,32 @@ export function DecisionMakerPanel({
             ? `Last researched ${new Date(record.imported_at).toLocaleString()}`
             : "Not researched yet"}
         </div>
-        <button onClick={onOpenResearch} style={buttonStyle}>
-          {record.people.length > 0 ? "Refresh research" : "Research decision-makers"}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={onAutoResearch}
+            disabled={!autoResearchAvailable || autoResearching}
+            title={
+              autoResearchAvailable
+                ? "Search the web and extract results automatically"
+                : "Needs an OPENAI_API_KEY in backend/.env"
+            }
+            style={{
+              ...buttonStyle,
+              opacity: autoResearchAvailable ? 1 : 0.5,
+              cursor: autoResearchAvailable && !autoResearching ? "pointer" : "not-allowed",
+            }}
+          >
+            {autoResearching ? "Researching…" : "Auto-research"}
+          </button>
+          <button onClick={onOpenResearch} style={buttonStyle}>
+            {record.people.length > 0 ? "Refresh research" : "Research decision-makers"}
+          </button>
+        </div>
       </div>
+
+      {autoResearchError && (
+        <p style={{ fontSize: 13, color: "var(--status-critical)", marginTop: 0 }}>{autoResearchError}</p>
+      )}
 
       {record.people.length === 0 ? (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
