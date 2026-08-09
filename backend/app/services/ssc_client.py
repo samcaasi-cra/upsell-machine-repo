@@ -89,6 +89,22 @@ def get_company(domain: str) -> dict:
     return _cached_get(f"{config.SSC_BASE_URL}/companies/{domain}")
 
 
+def get_third_party_vendors(domain: str, limit: int = 50) -> list[dict]:
+    """Detected third-party vendors via GET /vendor-detection/{domain}/third-party.
+
+    Each entry already includes its own current `score`/`company`/`domain`/`industry`
+    -- unlike /companies/{domain}, this endpoint needs no portfolio membership, so this
+    is a fully read-only lookup with no side effects on the shared SSC portfolio."""
+    try:
+        data = _cached_get(
+            f"{config.SSC_BASE_URL}/vendor-detection/{domain}/third-party",
+            params={"limit": limit},
+        )
+    except requests.RequestException:
+        return []
+    return data.get("entries", [])
+
+
 def get_score_history(domain: str, days: int = 190, timing: str = "weekly") -> list[dict]:
     """Historical score points via GET /companies/{domain}/history/score."""
     to_date = datetime.today()

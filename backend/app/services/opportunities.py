@@ -14,9 +14,21 @@ from datetime import date, datetime
 from typing import Optional
 
 from ..models import Customer, DecisionMakerRecord, NewsRecord, OpportunityCard, ScoreSummary, UsageSummary
+from . import ssc_client
 from .signals import _ENGAGEMENT_THRESHOLD, _SLOT_CAPACITY_WARN_PCT
 
 _BENCHMARK_VISITS_PER_USER = 5.0
+_SUPPLIER_RISK_SCORE_THRESHOLD = 50  # roughly grade F territory -- deliberately strict,
+# see _NOT_REAL_VENDORS below for why a looser bar is too noisy to be a signal
+
+# vendor-detection frequently flags open-source/infrastructure projects that every
+# company's tech stack touches (detected via fingerprinting, e.g. "runs on Apache") --
+# these aren't real third-party business relationships and score chronically low,
+# so without this filter this trigger fires for almost every customer.
+_NOT_REAL_VENDORS = {
+    "apache", "apache software foundation", "django", "linux foundation",
+    "the linux foundation", "cncf", "nginx", "openssl", "w3c", "python software foundation",
+}
 
 _RECIPIENT_PREFERENCE = {
     "proof": ["Cyber Security"],
@@ -137,6 +149,8 @@ def build_opportunity_cards(
     decision_makers: Optional[DecisionMakerRecord],
     industry_stats_map: dict[str, dict],
     news: Optional[NewsRecord] = None,
+    industry_declines: Optional[dict[str, list[tuple[str, int, str]]]] = None,
+    person_customer_map: Optional[dict[str, list[str]]] = None,
 ) -> list[OpportunityCard]:
     cards: list[OpportunityCard] = []
     today_iso = date.today().isoformat()
@@ -249,6 +263,53 @@ def build_opportunity_cards(
             recipient=(name, "New user"),
         )
 
+    # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no
+    # portfolio membership required -- the endpoint returns each vendor's own score) ---
+    vendors = ssc_client.get_third_party_vendors(customer.domain, limit=50)
+    at_risk_vendors = [
+        v
+        for v in vendors
+        if isinstance(v.get("score"), int)
+        and v["score"] < _SUPPLIER_RISK_SCORE_THRESHOLD
+        and (v.get("company") or "").strip().lower() not in _NOT_REAL_VENDORS
+    ]
+    if at_risk_vendors:
+        worst = min(at_risk_vendors, key=lambda v: v["score"])
+        vendor_name = worst.get("company") or worst.get("domain", "A detected supplier")
+        card(
+            "expansion",
+            str(worst["score"]),
+            "supplier at risk",
+            "watch",
+            f"{vendor_name} ({worst.get('domain', 'unknown domain')}), a supplier detected in "
+            f"{customer.name}'s third-party footprint, is currently scoring {worst['score']} — in the "
+            "at-risk range.",
+            "A supplier in your third-party footprint is showing elevated risk",
+            f"{vendor_name}, a supplier detected in {customer.name}'s third-party footprint, is currently "
+            f"scoring {worst['score']} on SecurityScorecard — in the at-risk range. Worth flagging and "
+            "reviewing exposure before a wider issue develops.",
+        )
+
+    # --- Expansion: close peer breach anticipated (tracked customers only, anonymised --
+    # never name one customer's risk posture to another) ---
+    if industry_declines and score.industry:
+        peer_declines = [d for d in industry_declines.get(score.industry, []) if d[0] != customer.id]
+        if peer_declines:
+            _, peer_delta, peer_window = max(peer_declines, key=lambda d: abs(d[1]))
+            industry_label = score.industry.replace("_", " ")
+            card(
+                "expansion",
+                str(peer_delta),
+                "peer score decline",
+                "watch",
+                f"A close peer in {industry_label} has seen its SSC score fall {abs(peer_delta)} points "
+                f"in the last {peer_window} — worth a proactive conversation about sector exposure.",
+                "Worth a proactive conversation about sector risk",
+                f"A close peer of yours in {industry_label} has seen a notable SSC score decline in the "
+                f"last {peer_window}. Without naming names, it's often a sign of sector-wide pressure — "
+                "worth a proactive conversation about your own supply-chain exposure in the space.",
+            )
+
     # --- Expansion events (from news research: acquisitions, new offices, product launches) ---
     if news:
         for event in news.events[:5]:
@@ -302,6 +363,37 @@ def build_opportunity_cards(
                     f"You're one of {count} new stakeholders identified in {customer.name}'s security "
                     "decision-making unit. Happy to offer a brief introduction so you have a direct line to "
                     "us alongside the rest of your team.",
+                    detected_at=detected_at,
+                    recipient=(p.name, p.title),
+                )
+
+        # --- Engagement: alumni joins another customer (cross-referenced against our own
+        # accumulated decision-maker research, no LinkedIn Sales Navigator needed) ---
+        if person_customer_map:
+            for p in decision_makers.people:
+                if p.status != "new":
+                    continue
+                keys = {p.name.strip().lower()}
+                if p.linkedin_url:
+                    keys.add(p.linkedin_url.strip().lower())
+                other_customers = []
+                for key in keys:
+                    for n in person_customer_map.get(key, []):
+                        if n != customer.name and n not in other_customers:
+                            other_customers.append(n)
+                if not other_customers:
+                    continue
+                card(
+                    "engagement",
+                    "ALUMNI",
+                    "familiar face",
+                    "good",
+                    f"{p.name} ({p.title}) was previously tracked at {other_customers[0]} — now identified "
+                    f"at {customer.name}.",
+                    f"Great to reconnect via {other_customers[0]}",
+                    f"Good to see a familiar face — you were previously part of the security team at "
+                    f"{other_customers[0]}, and we're glad to have you at {customer.name} now. Happy to "
+                    "pick up where we left off with a quick introduction to your new team's coverage.",
                     detected_at=detected_at,
                     recipient=(p.name, p.title),
                 )
