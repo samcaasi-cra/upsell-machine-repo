@@ -123,6 +123,37 @@ Open http://localhost:5173.
 - `OPENAI_API_KEY` — optional. Only powers automated research; without it those
   buttons disable and the copy/paste flow still works.
 
+### Demo safety net
+
+Live research is non-deterministic and rate-limited, so a demo shouldn't depend on it
+succeeding on the day. `backend/demo.py` snapshots a known-good data state and restores
+it in seconds:
+
+```bash
+cd backend
+.venv/Scripts/python demo.py snapshot   # capture the current state as the baseline
+.venv/Scripts/python demo.py status     # compare live state vs baseline
+.venv/Scripts/python demo.py restore    # put the baseline back, then restart the backend
+```
+
+`restore --fresh` restores the customer roster but clears the research caches — use it
+to demo research populating from empty. Only touches `backend/data/`; never credentials.
+
+### Suggested walkthrough
+
+1. **Opportunities board** — lead here. Point out the provenance legend, then the account
+   chips (live SSC grades) and the four lanes.
+2. **Open a card** → drafted email with the right recipient resolved from real research.
+   Change the recipient in the dropdown, show the greeting re-point, edit the body,
+   reset to default.
+3. **Point at a `◇ Sample data` card** — say plainly which parts are placeholder and why
+   they're labelled.
+4. **Customers tab** → a customer detail: live SSC score chart, then the News panel
+   showing automatically-researched events.
+5. **Close on the architecture point**: every gap is a connection, not a rebuild — news
+   already made exactly that transition from manual to automated with no prompt or
+   parser changes.
+
 ---
 
 ## The core principle: every gap is a connection, not a rebuild

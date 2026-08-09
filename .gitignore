@@ -26,6 +26,9 @@ backend/data/news_events/*.json
 # Runtime state for the daily research scheduler (last-run tracking)
 backend/data/research_schedule.json
 
+# Local demo baseline captured by demo.py -- machine-specific, not shared state
+backend/data/_demo_snapshot/
+
 # Contains hardcoded live-looking API keys (SSC token + OpenAI key) -- never commit.
 # Left in place at the user's request rather than stripped/edited.
 Cyber_Rescue_Supply_Chain_Crisis_Response_Plan.ipynb
