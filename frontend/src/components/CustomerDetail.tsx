@@ -16,7 +16,8 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
   const [showNewsResearch, setShowNewsResearch] = useState(false);
   const [autoResearchAvailable, setAutoResearchAvailable] = useState(false);
   const [autoBusy, setAutoBusy] = useState<"dm" | "news" | null>(null);
-  const [autoError, setAutoError] = useState<{ dm: string | null; news: string | null }>({
+  type AutoStatus = { text: string; kind: "ok" | "error" } | null;
+  const [autoStatus, setAutoStatus] = useState<{ dm: AutoStatus; news: AutoStatus }>({
     dm: null,
     news: null,
   });
@@ -42,13 +43,34 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
 
   async function runAutoResearch(kind: "dm" | "news") {
     setAutoBusy(kind);
-    setAutoError((prev) => ({ ...prev, [kind]: null }));
+    setAutoStatus((prev) => ({ ...prev, [kind]: null }));
+    // Compare against the current counts so we can say what actually changed --
+    // a successful run that finds nothing new must not look like a no-op.
+    const before = kind === "dm" ? overview?.decision_makers.people.length ?? 0 : overview?.news.events.length ?? 0;
     try {
-      if (kind === "dm") await api.autoResearchDecisionMakers(customerId);
-      else await api.autoResearchNews(customerId);
+      const result =
+        kind === "dm"
+          ? await api.autoResearchDecisionMakers(customerId)
+          : await api.autoResearchNews(customerId);
+      const after = "people" in result ? result.people.length : result.events.length;
+      const added = after - before;
+      const noun = kind === "dm" ? "decision-maker" : "news event";
+      setAutoStatus((prev) => ({
+        ...prev,
+        [kind]: {
+          kind: "ok",
+          text:
+            added > 0
+              ? `Found ${added} new ${noun}${added === 1 ? "" : "s"}.`
+              : `Research finished — no new ${noun}s found.`,
+        },
+      }));
       load();
     } catch (err) {
-      setAutoError((prev) => ({ ...prev, [kind]: err instanceof Error ? err.message : String(err) }));
+      setAutoStatus((prev) => ({
+        ...prev,
+        [kind]: { kind: "error", text: err instanceof Error ? err.message : String(err) },
+      }));
     } finally {
       setAutoBusy(null);
     }
@@ -114,7 +136,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
           onAutoResearch={() => runAutoResearch("dm")}
           autoResearchAvailable={autoResearchAvailable}
           autoResearching={autoBusy === "dm"}
-          autoResearchError={autoError.dm}
+          autoResearchStatus={autoStatus.dm}
         />
       </Section>
 
@@ -125,7 +147,7 @@ export function CustomerDetail({ customerId, onBack }: { customerId: string; onB
           onAutoResearch={() => runAutoResearch("news")}
           autoResearchAvailable={autoResearchAvailable}
           autoResearching={autoBusy === "news"}
-          autoResearchError={autoError.news}
+          autoResearchStatus={autoStatus.news}
         />
       </Section>
 

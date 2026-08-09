@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { DecisionMakerRecord } from "../types";
+import { AutoResearchStatus } from "./AutoResearchStatus";
 
 export function DecisionMakerPanel({
   record,
@@ -7,14 +8,14 @@ export function DecisionMakerPanel({
   onAutoResearch,
   autoResearchAvailable,
   autoResearching,
-  autoResearchError,
+  autoResearchStatus,
 }: {
   record: DecisionMakerRecord;
   onOpenResearch: () => void;
   onAutoResearch: () => void;
   autoResearchAvailable: boolean;
   autoResearching: boolean;
-  autoResearchError: string | null;
+  autoResearchStatus: { text: string; kind: "ok" | "error" } | null;
 }) {
   return (
     <div>
@@ -47,9 +48,7 @@ export function DecisionMakerPanel({
         </div>
       </div>
 
-      {autoResearchError && (
-        <p style={{ fontSize: 13, color: "var(--status-critical)", marginTop: 0 }}>{autoResearchError}</p>
-      )}
+      <AutoResearchStatus researching={autoResearching} status={autoResearchStatus} />
 
       {record.people.length === 0 ? (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>

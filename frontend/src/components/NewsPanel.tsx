@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { NewsEventType, NewsRecord } from "../types";
+import { AutoResearchStatus } from "./AutoResearchStatus";
 
 const EVENT_TYPE_LABEL: Record<NewsEventType, string> = {
   acquisition: "Acquisition",
@@ -13,14 +14,14 @@ export function NewsPanel({
   onAutoResearch,
   autoResearchAvailable,
   autoResearching,
-  autoResearchError,
+  autoResearchStatus,
 }: {
   record: NewsRecord;
   onOpenResearch: () => void;
   onAutoResearch: () => void;
   autoResearchAvailable: boolean;
   autoResearching: boolean;
-  autoResearchError: string | null;
+  autoResearchStatus: { text: string; kind: "ok" | "error" } | null;
 }) {
   return (
     <div>
@@ -53,9 +54,7 @@ export function NewsPanel({
         </div>
       </div>
 
-      {autoResearchError && (
-        <p style={{ fontSize: 13, color: "var(--status-critical)", marginTop: 0 }}>{autoResearchError}</p>
-      )}
+      <AutoResearchStatus researching={autoResearching} status={autoResearchStatus} />
 
       {record.events.length === 0 ? (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
