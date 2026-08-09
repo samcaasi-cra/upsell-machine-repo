@@ -125,15 +125,61 @@ Open http://localhost:5173.
 
 ---
 
+## The core principle: every gap is a connection, not a rebuild
+
+**Where a real API exists, the feature is already automated. Where one doesn't, the
+same logic runs manually through a prompt — and swapping in the API later is a
+configuration change, not a rewrite.**
+
+This is deliberate architecture, and it's the main thing to take away:
+
+| Capability | Today | When connected to an API |
+|---|---|---|
+| SSC scores, suppliers | **Automated** — live API | Already done |
+| News / M&A / launches | **Automated** — runs daily, unattended | Already done |
+| Decision-makers | Manual prompt → paste JSON | Same prompt, same parser, same cache — automated |
+| Platform usage | Placeholder generator | Replace one module; every trigger it feeds goes live |
+| Sponsor / CSM | Seed data | Salesforce sync replaces the roster source |
+
+Both research paths already share the *same* prompt rules, the *same* JSON schema, and
+the *same* storage and diffing code. The manual flow isn't a stopgap built to be thrown
+away — it's the identical pipeline with a human doing the retrieval step. That's why
+news went from manual to fully automated with no change to the prompt or the parser.
+
+---
+
 ## Known limitations
 
-- **DuckDuckGo rate-limits** under repeated use. Google News RSS keeps working, so news
-  research degrades rather than breaks.
-- **Decision-maker auto-research rarely returns anyone.** Not a bug — see below.
-- **Actioned state is session-only**, cleared on reload. Deliberate: matches the
-  reference demo, and there's no per-user identity to attribute it to yet.
-- **The scheduler runs in-process**, so it only fires while the backend is up. Fine for
-  a hackathon; a real deployment wants cron or a task queue.
+Stated plainly, because they matter for judging what's demo-ready vs production-ready.
+
+**Data**
+- **Platform usage is placeholder data.** This is the single biggest gap — four
+  triggers (1, 3, 10, 21) depend on it. Numbers are deterministic per customer per day
+  so demos are stable, and everything derived from it is tagged `◇ Sample data` in the
+  UI. It is *shaped* like a real feed, so swapping in real data is a module swap.
+- **Sponsor / CSM assignments are seed data.** No CRM is connected.
+- **9 of 23 triggers aren't built**, all blocked on data we don't have access to
+  (breach feeds, supplier portfolios, share price, forum/social, CRM) — not on
+  engineering effort.
+
+**Research**
+- **DuckDuckGo rate-limits** after modest use. News degrades rather than breaks because
+  Google News RSS carries it, but the article-text half goes quiet.
+- **Decision-maker auto-research returns almost nobody** — retrieval limitation, not a
+  prompt or model problem. Detailed below.
+- **Research quality is only as good as public reporting.** Small or private companies
+  produce thin results.
+
+**Engineering**
+- **The scheduler runs in-process** — it only fires while the backend is up, and state
+  is a JSON file. Fine at this scale; production wants cron or a task queue.
+- **Storage is JSON files, not a database.** No concurrent-write safety. Correct call
+  for a hackathon, wrong one for multiple CSMs using it at once.
+- **No authentication.** Anyone who can reach the port can use it.
+- **"Mark as actioned" is session-only**, cleared on reload — there's no per-user
+  identity to attribute it to yet.
+- **No automated tests.** Verification has been manual against live data.
+- **Single-tenant, local-only.** Not deployed anywhere.
 
 ---
 
