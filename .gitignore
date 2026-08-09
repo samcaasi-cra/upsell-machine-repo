@@ -22,3 +22,7 @@ backend/data/usage_individuals/*.json
 # Runtime-generated cache from the news research import flow (acquisitions,
 # new offices, product launches)
 backend/data/news_events/*.json
+
+# Contains hardcoded live-looking API keys (SSC token + OpenAI key) -- never commit.
+# Left in place at the user's request rather than stripped/edited.
+Cyber_Rescue_Supply_Chain_Crisis_Response_Plan.ipynb
