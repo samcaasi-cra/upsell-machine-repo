@@ -361,6 +361,44 @@
   border-radius: 999px;
   margin: 0 0 8px;
 }
+/* Provenance marker so a demo audience can tell real data from placeholder data. */
+.opp-sample-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px dashed var(--border-strong);
+  color: var(--slate);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.opp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.68rem;
+  color: var(--slate);
+}
+.opp-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.opp-legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
 .opp-ticket-foot {
   display: flex;
   align-items: center;

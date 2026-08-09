@@ -54,6 +54,15 @@ export const api = {
       body: JSON.stringify({ text }),
     }),
   getCapabilities: () => request<{ auto_research: boolean }>("/capabilities"),
+  getResearchStatus: () =>
+    request<{
+      enabled: boolean;
+      running: boolean;
+      last_run_at: string | null;
+      last_result: { events_added: number; customers_processed: number } | null;
+      due_today: boolean;
+    }>("/research-status"),
+  runResearchNow: () => request<{ status: string; detail?: string }>("/research-run-now", { method: "POST" }),
   autoResearchDecisionMakers: (customerId: string) =>
     request<DecisionMakerRecord>(`/customers/${customerId}/decision-makers/auto-research`, { method: "POST" }),
   autoResearchNews: (customerId: string) =>

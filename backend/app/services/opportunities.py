@@ -13,7 +13,15 @@ import hashlib
 from datetime import date, datetime
 from typing import Optional
 
-from ..models import Customer, DecisionMakerRecord, NewsRecord, OpportunityCard, ScoreSummary, UsageSummary
+from ..models import (
+    Customer,
+    DecisionMakerRecord,
+    NewsRecord,
+    OpportunityCard,
+    RecipientOption,
+    ScoreSummary,
+    UsageSummary,
+)
 from . import ssc_client
 from .signals import _ENGAGEMENT_THRESHOLD, _SLOT_CAPACITY_WARN_PCT
 
@@ -86,9 +94,23 @@ def _make_card(
     decision_makers: Optional[DecisionMakerRecord],
     badge: Optional[str] = None,
     recipient: Optional[tuple[str, str]] = None,
+    data_source: str = "live",
 ) -> OpportunityCard:
     recipient_name, recipient_role = recipient or _pick_recipient(customer, decision_makers, group)
     first_name = recipient_name.split(" ")[0] if recipient_name != "Primary Contact" else "there"
+
+    options: list[RecipientOption] = []
+    seen_names = set()
+    for candidate_name, candidate_role in [(recipient_name, recipient_role)] + [
+        (p.name, p.title) for p in (decision_makers.people if decision_makers else [])
+    ]:
+        key = candidate_name.strip().lower()
+        if key and key not in seen_names:
+            seen_names.add(key)
+            options.append(RecipientOption(name=candidate_name, role=candidate_role))
+    if customer.sponsor and customer.sponsor.strip().lower() not in seen_names:
+        options.append(RecipientOption(name=customer.sponsor, role="Sponsor"))
+
     signer = _signer(customer)
     body = f"Hello {first_name},\n\n{body_intro}\n\nKind regards,\n{signer}\nSecurityScorecard Customer Success"
     return OpportunityCard(
@@ -100,11 +122,13 @@ def _make_card(
         value=value,
         label=label,
         sentiment=sentiment,
+        data_source=data_source,
         badge=badge,
         description=description,
         detected_at=detected_at,
         recipient_name=recipient_name,
         recipient_role=recipient_role,
+        recipient_options=options,
         subject=subject,
         body=body,
     )
@@ -227,6 +251,7 @@ def build_opportunity_cards(
                 f"{customer.name} is now using {usage.slots_used} of {usage.licensed_slots} licensed vendor "
                 f"slots ({pct}% utilisation). Worth a short conversation about headroom before you reach the "
                 "ceiling, so onboarding a new supplier is never delayed by a licence limit.",
+                data_source="sample",
             )
 
     total_visits = sum(i.visits_7d for i in usage.individuals)
@@ -246,6 +271,7 @@ def build_opportunity_cards(
             f"active users — {multiplier} per user, well above our usage benchmark of "
             f"{_BENCHMARK_VISITS_PER_USER:g}. That level of engagement usually means the team is ready for "
             "more advanced views.",
+            data_source="sample",
         )
 
     for name in usage.new_individuals[:3]:
@@ -261,6 +287,7 @@ def build_opportunity_cards(
             f"visibility into {customer.name}'s own rating and its monitored data. Happy to walk you through "
             "the views that matter most for your role.",
             recipient=(name, "New user"),
+            data_source="sample",
         )
 
     # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no

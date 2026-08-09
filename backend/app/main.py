@@ -1,10 +1,21 @@
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import customers, decision_makers, news, opportunities, scores, upsell, usage
-from .services import web_research
+from .services import scheduler, web_research
 
-app = FastAPI(title="Upsell Machine — Project 5")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(scheduler.daily_loop())
+    yield
+    task.cancel()
+
+
+app = FastAPI(title="Upsell Machine — Project 5", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,3 +42,18 @@ def health() -> dict:
 def capabilities() -> dict:
     """Lets the UI show or disable features that depend on optional configuration."""
     return {"auto_research": web_research.is_configured()}
+
+
+@app.get("/research-status")
+def research_status() -> dict:
+    return scheduler.status()
+
+
+@app.post("/research-run-now")
+async def research_run_now() -> dict:
+    """Manual trigger for the same batch the daily loop runs."""
+    if not web_research.is_configured():
+        return {"status": "disabled", "detail": "Needs an OPENAI_API_KEY in backend/.env."}
+    # Fire and forget: the batch takes minutes, far longer than a sensible HTTP wait.
+    asyncio.create_task(scheduler.run_batch(reason="manual"))
+    return {"status": "started"}

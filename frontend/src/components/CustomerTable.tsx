@@ -18,9 +18,16 @@ export function CustomerTable({
       <table style={{ width: "100%", borderCollapse: "collapse", background: "var(--surface-1)" }}>
         <thead>
           <tr style={{ textAlign: "left", borderBottom: "1px solid var(--gridline)" }}>
-            {["Customer", "CSM", "SSC Score", "Usage (7d)", "Decision-makers", "Signal"].map((h) => (
+            {[
+              { label: "Customer", note: null },
+              { label: "CSM", note: "sample" },
+              { label: "SSC Score", note: "live" },
+              { label: "Usage (7d)", note: "sample" },
+              { label: "Decision-makers", note: "researched" },
+              { label: "Signal", note: null },
+            ].map((h) => (
               <th
-                key={h}
+                key={h.label}
                 style={{
                   padding: "10px 14px",
                   fontSize: 12,
@@ -30,7 +37,21 @@ export function CustomerTable({
                   fontWeight: 600,
                 }}
               >
-                {h}
+                {h.label}
+                {h.note && (
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: 9,
+                      fontWeight: 600,
+                      letterSpacing: 0.3,
+                      marginTop: 2,
+                      color: h.note === "live" ? "var(--delta-good)" : "var(--text-muted)",
+                    }}
+                  >
+                    {h.note === "live" ? "● live SSC" : h.note === "researched" ? "◆ researched" : "◇ sample"}
+                  </span>
+                )}
               </th>
             ))}
           </tr>

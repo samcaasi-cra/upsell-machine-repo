@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./OpportunityBoard.css";
 import { api } from "../api/client";
 import { EmailDrawer } from "./EmailDrawer";
@@ -48,14 +48,42 @@ export function OpportunityBoard() {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [actioned, setActioned] = useState<Set<string>>(new Set());
+  const [research, setResearch] = useState<Awaited<ReturnType<typeof api.getResearchStatus>> | null>(null);
 
-  useEffect(() => {
+  const loadBoard = useCallback(() => {
     api
       .getOpportunityBoard()
       .then(setBoard)
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadBoard();
+  }, [loadBoard]);
+
+  const refreshResearchStatus = useCallback(() => {
+    api.getResearchStatus().then(setResearch).catch(() => setResearch(null));
+  }, []);
+
+  useEffect(() => {
+    refreshResearchStatus();
+  }, [refreshResearchStatus]);
+
+  // While a batch is running, poll so the board picks up new cards as they land.
+  useEffect(() => {
+    if (!research?.running) return;
+    const id = setInterval(() => {
+      refreshResearchStatus();
+      loadBoard();
+    }, 15000);
+    return () => clearInterval(id);
+  }, [research?.running, refreshResearchStatus, loadBoard]);
+
+  async function handleRunNow() {
+    await api.runResearchNow();
+    setTimeout(refreshResearchStatus, 500);
+  }
 
   function toggleActioned(id: string) {
     setActioned((prev) => {
@@ -91,6 +119,24 @@ export function OpportunityBoard() {
             {totalCount} open opportunit{totalCount === 1 ? "y" : "ies"} across {accountsWithOpps.size} account
             {accountsWithOpps.size === 1 ? "" : "s"}
           </span>
+          {research && (
+            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.68rem", color: "var(--slate)" }}>
+              {research.running
+                ? "Daily research running…"
+                : research.last_run_at
+                  ? `Auto-researched ${new Date(research.last_run_at).toLocaleDateString()}`
+                  : "Auto-research runs daily"}
+              {research.enabled && !research.running && (
+                <button
+                  onClick={handleRunNow}
+                  className="opp-btn"
+                  style={{ fontSize: "0.68rem", padding: "3px 8px" }}
+                >
+                  Run now
+                </button>
+              )}
+            </span>
+          )}
         </div>
       </header>
 
@@ -120,6 +166,24 @@ export function OpportunityBoard() {
           );
         })}
       </nav>
+
+      <div className="opp-legend">
+        <strong style={{ fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          Where this data comes from
+        </strong>
+        <span className="opp-legend-item">
+          <span className="opp-legend-swatch" style={{ background: "var(--moss)" }} />
+          SSC scores, industry &amp; supplier detection — live API
+        </span>
+        <span className="opp-legend-item">
+          <span className="opp-legend-swatch" style={{ background: "var(--petrol)" }} />
+          News &amp; decision-makers — researched, then cached
+        </span>
+        <span className="opp-legend-item">
+          <span className="opp-sample-tag">◇ Sample data</span>
+          Platform usage (logins, slots) — placeholder until the usage feed is connected
+        </span>
+      </div>
 
       <main className="opp-lanes" aria-label="Opportunity feed">
         {GROUPS.map((g) => {
@@ -193,6 +257,13 @@ function Ticket({ card, actioned, onOpen }: { card: OpportunityCard; actioned: b
         <span className="opp-ticket-account">{card.customer_name}</span>
         <span className="opp-ticket-industry">{card.industry ? card.industry.replace(/_/g, " ") : ""}</span>
       </div>
+      {card.data_source === "sample" && (
+        <div style={{ marginTop: 6 }}>
+          <span className="opp-sample-tag" title="Built from placeholder platform-usage data, not a live feed">
+            ◇ Sample data
+          </span>
+        </div>
+      )}
       {card.badge && <span className="opp-ticket-badge">{card.badge}</span>}
       <div className="opp-ticket-metric">
         <span className={`opp-metric-value sent-${card.sentiment}`}>{card.value}</span>

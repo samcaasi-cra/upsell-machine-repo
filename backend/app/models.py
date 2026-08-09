@@ -146,6 +146,14 @@ class CustomerSummary(BaseModel):
 
 OpportunityGroup = Literal["proof", "adoption", "expansion", "engagement"]
 Sentiment = Literal["good", "watch", "info"]
+# "live"   = derived from a real external source (SSC API, imported research)
+# "sample" = derived from the placeholder platform-usage generator
+DataSource = Literal["live", "sample"]
+
+
+class RecipientOption(BaseModel):
+    name: str
+    role: str
 
 
 class OpportunityCard(BaseModel):
@@ -157,11 +165,15 @@ class OpportunityCard(BaseModel):
     value: str
     label: str
     sentiment: Sentiment
+    data_source: DataSource = "live"
     badge: Optional[str] = None
     description: str
     detected_at: str
     recipient_name: str
     recipient_role: str
+    # Everyone we know of at this customer, so a CSM can redirect the draft without
+    # leaving the dashboard.
+    recipient_options: List[RecipientOption] = Field(default_factory=list)
     subject: str
     body: str
 

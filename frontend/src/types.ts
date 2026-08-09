@@ -111,6 +111,7 @@ export interface CustomerOverview {
 
 export type OpportunityGroup = "proof" | "adoption" | "expansion" | "engagement";
 export type Sentiment = "good" | "watch" | "info";
+export type DataSource = "live" | "sample";
 
 export interface OpportunityCard {
   card_id: string;
@@ -121,13 +122,20 @@ export interface OpportunityCard {
   value: string;
   label: string;
   sentiment: Sentiment;
+  data_source: DataSource;
   badge: string | null;
   description: string;
   detected_at: string;
   recipient_name: string;
   recipient_role: string;
+  recipient_options: RecipientOption[];
   subject: string;
   body: string;
+}
+
+export interface RecipientOption {
+  name: string;
+  role: string;
 }
 
 export interface AccountChip {
