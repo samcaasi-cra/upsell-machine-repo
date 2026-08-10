@@ -17,6 +17,7 @@ import os
 from typing import Optional
 
 from . import agent_tools
+from .redaction import Pseudonymiser
 
 _MAX_ITERATIONS = 6  # a runaway loop is the main cost risk with tool-calling
 
@@ -39,7 +40,11 @@ Rules:
 - Ground every claim in tool output. Never invent scores, names, or events.
 - Platform usage data is placeholder sample data, not a live feed. If you cite it, say so.
 - Be concise and practical. A CSM wants to know who to contact and why, not a report.
-- If asked to draft outreach, keep it short, specific, and free of hype."""
+- If asked to draft outreach, keep it short, specific, and free of hype.
+
+Customers and people appear as labels (CUST_A, PERSON_1) rather than names, for data
+protection. Use those labels exactly as given -- they are substituted back to real
+names before the reader sees your answer. Never guess at or invent a real name."""
 
 
 def is_configured() -> bool:
@@ -54,13 +59,16 @@ def active_provider() -> Optional[str]:
     return None
 
 
-def _run_openai(messages: list[dict]) -> dict:
+def _run_openai(messages: list[dict], masker: Pseudonymiser) -> dict:
     from openai import OpenAI
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     model = os.getenv("AGENT_MODEL", "gpt-4o-mini")
 
-    convo = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+    # The user's own question can name a customer, so it gets redacted too.
+    convo = [{"role": "system", "content": SYSTEM_PROMPT}] + [
+        {"role": m["role"], "content": masker.redact(m["content"])} for m in messages
+    ]
     tool_calls_made: list[dict] = []
     prompt_tokens = completion_tokens = 0
 
@@ -77,7 +85,7 @@ def _run_openai(messages: list[dict]) -> dict:
         msg = resp.choices[0].message
         if not msg.tool_calls:
             return {
-                "reply": msg.content or "",
+                "reply": masker.restore(msg.content or ""),
                 "tool_calls": tool_calls_made,
                 "tokens": {"prompt": prompt_tokens, "completion": completion_tokens},
                 "provider": "openai",
@@ -105,7 +113,9 @@ def _run_openai(messages: list[dict]) -> dict:
                 args = {}
             result = agent_tools.call(tc.function.name, args)
             tool_calls_made.append({"tool": tc.function.name, "arguments": args})
-            convo.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(result, default=str)})
+            # Redact on the way out -- this is the payload that actually leaves us.
+            safe = masker.redact(result)
+            convo.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(safe, default=str)})
 
     return {
         "reply": "I wasn't able to finish that within the tool-call limit — try narrowing the question.",
@@ -116,13 +126,13 @@ def _run_openai(messages: list[dict]) -> dict:
     }
 
 
-def _run_anthropic(messages: list[dict]) -> dict:
+def _run_anthropic(messages: list[dict], masker: Pseudonymiser) -> dict:
     import anthropic
 
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     model = os.getenv("AGENT_MODEL", "claude-sonnet-5")
 
-    convo = [{"role": m["role"], "content": m["content"]} for m in messages]
+    convo = [{"role": m["role"], "content": masker.redact(m["content"])} for m in messages]
     tool_calls_made: list[dict] = []
     prompt_tokens = completion_tokens = 0
 
@@ -141,7 +151,7 @@ def _run_anthropic(messages: list[dict]) -> dict:
         if not tool_uses:
             text = "".join(b.text for b in resp.content if b.type == "text")
             return {
-                "reply": text,
+                "reply": masker.restore(text),
                 "tool_calls": tool_calls_made,
                 "tokens": {"prompt": prompt_tokens, "completion": completion_tokens},
                 "provider": "anthropic",
@@ -153,8 +163,9 @@ def _run_anthropic(messages: list[dict]) -> dict:
         for tu in tool_uses:
             result = agent_tools.call(tu.name, dict(tu.input))
             tool_calls_made.append({"tool": tu.name, "arguments": dict(tu.input)})
+            safe = masker.redact(result)
             results.append(
-                {"type": "tool_result", "tool_use_id": tu.id, "content": json.dumps(result, default=str)}
+                {"type": "tool_result", "tool_use_id": tu.id, "content": json.dumps(safe, default=str)}
             )
         convo.append({"role": "user", "content": results})
 
@@ -168,10 +179,19 @@ def _run_anthropic(messages: list[dict]) -> dict:
 
 
 def run(messages: list[dict]) -> dict:
-    """messages: [{role: 'user'|'assistant', content: str}, ...]"""
+    """messages: [{role: 'user'|'assistant', content: str}, ...]
+
+    Customer and person identities are pseudonymised before anything leaves this
+    process and restored on the way back, so the model never receives a real name
+    joined to a security score.
+    """
     provider = active_provider()
+    masker = Pseudonymiser()
     if provider == "anthropic":
-        return _run_anthropic(messages)
-    if provider == "openai":
-        return _run_openai(messages)
-    raise RuntimeError("No model configured — set ANTHROPIC_API_KEY or OPENAI_API_KEY.")
+        result = _run_anthropic(messages, masker)
+    elif provider == "openai":
+        result = _run_openai(messages, masker)
+    else:
+        raise RuntimeError("No model configured — set ANTHROPIC_API_KEY or OPENAI_API_KEY.")
+    result["pseudonymised"] = True
+    return result
