@@ -52,7 +52,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  checkHealth: () => request<{ status: string; auth_required: boolean }>("/health"),
+  checkHealth: () => request<{ status: string; auth_required: boolean; csm_name: string }>("/health"),
   login: (password: string) =>
     request<{ token: string; auth_required: boolean }>("/login", {
       method: "POST",

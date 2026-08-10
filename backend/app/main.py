@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import auth
+from . import auth, config
 from .routers import agent, customers, decision_makers, news, opportunities, scores, upsell, usage
 from .services import scheduler, web_research
 
@@ -48,7 +48,7 @@ app.include_router(agent.router)
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "auth_required": auth.is_enabled()}
+    return {"status": "ok", "auth_required": auth.is_enabled(), "csm_name": config.CSM_NAME}
 
 
 class LoginRequest(BaseModel):

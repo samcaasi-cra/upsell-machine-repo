@@ -23,6 +23,7 @@ from ..models import (
     ScoreSummary,
     UsageSummary,
 )
+from .. import config
 from . import ssc_client
 from .signals import _ENGAGEMENT_THRESHOLD, _SLOT_CAPACITY_WARN_PCT
 
@@ -136,7 +137,7 @@ def _card_id(customer_id: str, group: str, label: str, description: str, *extra:
 
 
 def _signer(customer: Customer) -> str:
-    return customer.csm or "The SecurityScorecard Customer Success Team"
+    return customer.csm or config.CSM_NAME
 
 
 def _make_card(
