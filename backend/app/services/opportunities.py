@@ -10,6 +10,7 @@ reference implementation.
 """
 
 import hashlib
+import re
 from datetime import date, datetime
 from typing import Optional
 
@@ -37,6 +38,20 @@ _NOT_REAL_VENDORS = {
     "apache", "apache software foundation", "django", "linux foundation",
     "the linux foundation", "cncf", "nginx", "openssl", "w3c", "python software foundation",
 }
+
+def _is_ignored_vendor(name: Optional[str]) -> bool:
+    """Vendor detection returns names with legal suffixes attached ("Python Software
+    Foundation Corp"), so comparing the whole string against _NOT_REAL_VENDORS misses
+    them. Match on the leading words instead, requiring a word boundary after the term
+    so a short entry like "nginx" can't swallow an unrelated "Nginxy Ltd".
+    """
+    cleaned = re.sub(r"[^a-z0-9]+", " ", (name or "").lower()).strip()
+    # "The Apache Software Foundation" and "Apache Software Foundation" are the same body.
+    cleaned = re.sub(r"^the ", "", cleaned)
+    if not cleaned:
+        return False
+    return any(cleaned == term or cleaned.startswith(term + " ") for term in _NOT_REAL_VENDORS)
+
 
 _RECIPIENT_PREFERENCE = {
     "proof": ["Cyber Security"],
@@ -312,7 +327,7 @@ def build_opportunity_cards(
         for v in vendors
         if isinstance(v.get("score"), int)
         and v["score"] < _SUPPLIER_RISK_SCORE_THRESHOLD
-        and (v.get("company") or "").strip().lower() not in _NOT_REAL_VENDORS
+        and not _is_ignored_vendor(v.get("company"))
     ]
     if at_risk_vendors:
         worst = min(at_risk_vendors, key=lambda v: v["score"])
