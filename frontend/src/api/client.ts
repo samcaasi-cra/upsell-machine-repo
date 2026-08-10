@@ -83,6 +83,15 @@ export const api = {
       body: JSON.stringify({ text }),
     }),
   getCapabilities: () => request<{ auto_research: boolean }>("/capabilities"),
+  getAgentStatus: () => request<{ enabled: boolean; provider: string | null }>("/agent/status"),
+  agentChat: (messages: { role: string; content: string }[]) =>
+    request<{
+      reply: string;
+      tool_calls: { tool: string; arguments: Record<string, unknown> }[];
+      tokens: { prompt: number; completion: number };
+      provider: string;
+      model: string;
+    }>("/agent/chat", { method: "POST", body: JSON.stringify({ messages }) }),
   getResearchStatus: () =>
     request<{
       enabled: boolean;

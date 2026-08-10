@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, authToken } from "./api/client";
 import { AddCustomerModal } from "./components/AddCustomerModal";
+import { AgentChat } from "./components/AgentChat";
 import { CustomerDetail } from "./components/CustomerDetail";
 import { CustomerTable } from "./components/CustomerTable";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import type { CustomerSummary } from "./types";
 
-type Tab = "opportunities" | "customers";
+type Tab = "ask" | "opportunities" | "customers";
 
 function App() {
   // null = still checking whether this deployment requires a password
@@ -87,7 +88,7 @@ function Dashboard() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <nav style={{ display: "flex", gap: 4, background: "var(--surface-2)", borderRadius: 8, padding: 3 }}>
-            {(["opportunities", "customers"] as Tab[]).map((t) => (
+            {(["ask", "opportunities", "customers"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => {
@@ -106,7 +107,7 @@ function Dashboard() {
                   boxShadow: tab === t ? "0 1px 2px var(--border)" : "none",
                 }}
               >
-                {t === "opportunities" ? "Opportunities" : "Customers"}
+                {t === "ask" ? "Ask" : t === "opportunities" ? "Opportunities" : "Customers"}
               </button>
             ))}
           </nav>
@@ -154,7 +155,9 @@ function Dashboard() {
         </p>
       )}
 
-      {tab === "opportunities" ? (
+      {tab === "ask" ? (
+        <AgentChat />
+      ) : tab === "opportunities" ? (
         <OpportunityBoard />
       ) : (
         <div>

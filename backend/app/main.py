@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from . import auth
-from .routers import customers, decision_makers, news, opportunities, scores, upsell, usage
+from .routers import agent, customers, decision_makers, news, opportunities, scores, upsell, usage
 from .services import scheduler, web_research
 
 
@@ -43,6 +43,7 @@ app.include_router(decision_makers.router)
 app.include_router(news.router)
 app.include_router(upsell.router)
 app.include_router(opportunities.router)
+app.include_router(agent.router)
 
 
 @app.get("/health")
