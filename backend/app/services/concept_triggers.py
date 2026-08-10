@@ -44,7 +44,7 @@ def build_concept_cards(
     """Deterministic per customer, so a demo shows the same numbers every time.
 
     Triggers are spread across the roster rather than stamped onto every account:
-    putting all nine on all thirteen customers would bury the real signals and look
+    putting all ten on every customer would bury the real signals and look
     nothing like reality, where a given account has one or two things happening.
     """
     rng = random.Random(f"concept:{customer.id}")
@@ -66,6 +66,9 @@ def build_concept_cards(
     review_days = rng.randint(3, 21)
     quarter = rng.choice(["Q1 2027", "Q2 2027", "Q4 2026"])
     supplier = rng.choice(["Kestrel Freight", "Dunmore Systems", "Ashgrove Partners", "Halden Logistics"])
+    # Deliberately not one of the researched decision-makers -- #22 is about someone
+    # outside the known DMU, which is what makes it a different play from #20.
+    poster = rng.choice(["Priya Raman", "Tom Okafor", "Elena Vasquez", "Daniel Mensah"])
 
     # (trigger, group, value, label, sentiment, description, detail, subject, body_intro, needs, days_ago)
     specs = [
@@ -149,6 +152,17 @@ def build_concept_cards(
             "Social listening (LinkedIn API is partner-gated)", 2,
         ),
         (
+            "#22", "engagement", "POST", "non-DMU on cyber", "info",
+            "Someone outside the DMU is talking cyber — a possible champion.",
+            f"{poster} at {customer.name}, outside the known decision-making unit, posted publicly about "
+            "supply-chain security this week.",
+            f"Happy to go deeper with {poster.split(' ')[0]}",
+            f"{poster} on your team posted recently about supply-chain security. Grassroots interest like "
+            "that often runs ahead of a formal programme, so I'd be glad to give them a deeper walkthrough "
+            "of what we monitor — and to keep you across whatever comes out of it.",
+            "Social listening (LinkedIn API is partner-gated)", 6,
+        ),
+        (
             "#23", "engagement", f"{review_days}d", "until CSM review", "info",
             "Confirm attendees for the upcoming review.",
             f"Quarterly CSM review due in {review_days} days"
@@ -165,7 +179,7 @@ def build_concept_cards(
         if p.name != recipient_name:
             options.append(RecipientOption(name=p.name, role=p.title))
 
-    # One trigger per account, cycling through the list, so all nine appear somewhere
+    # One trigger per account, cycling through the list, so all ten appear somewhere
     # across the roster without any single account carrying an implausible pile of them.
     selected = [specs[roster_index % len(specs)]] if roster_size > 1 else specs
 
