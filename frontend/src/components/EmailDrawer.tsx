@@ -117,6 +117,14 @@ export function EmailDrawer({
 
           {card.detail && <p className="opp-drawer-detail">{card.detail}</p>}
 
+          {card.source_url && (
+            <p style={{ margin: "0 0 10px", fontSize: "0.78rem" }}>
+              <a href={card.source_url} target="_blank" rel="noreferrer" style={{ color: "var(--petrol, #5422FF)" }}>
+                Read the source article ↗
+              </a>
+            </p>
+          )}
+
           {card.data_source === "sample" && (
             <p style={{ margin: "0 0 10px" }}>
               <span className="opp-sample-tag">◇ Sample data</span>{" "}

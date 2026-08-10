@@ -16,7 +16,9 @@ prompt rule text and the *same* JSON parsers as the manual flow, so both paths p
 identical data -- the only difference is who runs the prompt.
 """
 
+import json
 import os
+import re
 import urllib.parse
 
 import requests
@@ -40,6 +42,9 @@ def search_google_news(query: str, limit: int = 8, recency: str = "m") -> list[d
 
     We use the feed metadata directly rather than following the links: Google News link
     URLs are JS-based redirects that yield no article text when fetched server-side.
+    We still keep the link, though -- it resolves fine in a browser, which is where a
+    CSM clicking through from a card actually opens it. Note that <source url> is the
+    publisher's homepage, not the article, so the two are captured separately.
     """
     when = _RECENCY_TO_GOOGLE.get(recency, "30d")
     q = urllib.parse.quote_plus(f"{query} when:{when}")
@@ -56,37 +61,93 @@ def search_google_news(query: str, limit: int = 8, recency: str = "m") -> list[d
         title = item.find("title")
         pub_date = item.find("pubDate")
         source = item.find("source")
+        link = item.find("link")
         items.append(
             {
                 "headline": title.get_text(strip=True) if title else "",
                 "published": pub_date.get_text(strip=True) if pub_date else "",
                 "publisher": source.get_text(strip=True) if source else "",
-                "source_url": source.get("url") if source and source.get("url") else "",
+                "article_url": link.get_text(strip=True) if link else "",
+                "publisher_url": source.get("url") if source and source.get("url") else "",
             }
         )
     return [i for i in items if i["headline"]]
 
 
-def gather_source_text(queries: list[str], recency: str = "m", limit_per_query: int = 8) -> str:
-    """Deduplicated, attributed headlines across every query, labelled so the
-    extraction step can cite them back."""
+def gather_source_items(queries: list[str], recency: str = "m", limit_per_query: int = 8) -> list[dict]:
+    """Deduplicated feed items across every query, in the order they were seen."""
     seen: set[str] = set()
-    lines: list[str] = []
+    items: list[dict] = []
     for query in queries:
         for item in search_google_news(query, limit=limit_per_query, recency=recency):
             key = item["headline"].strip().lower()
             if key in seen:
                 continue
             seen.add(key)
-            lines.append(
-                f"- {item['headline']} "
-                f"(published {item['published']}, via {item['publisher'] or 'unknown'}"
-                + (f", {item['source_url']}" if item["source_url"] else "")
-                + ")"
-            )
-    if not lines:
+            items.append(item)
+    return items
+
+
+def build_source_text(items: list[dict]) -> str:
+    """Attributed headlines for the extraction step.
+
+    Article URLs are deliberately left out: they're long Google redirect links that
+    burn tokens and that the model tends to mangle when echoing back. We reattach the
+    real link afterwards by matching on headline -- see _reattach_source_urls.
+    """
+    if not items:
         return ""
+    lines = [
+        f"- {i['headline']} (published {i['published']}, via {i['publisher'] or 'unknown'})"
+        for i in items
+    ]
     return "RECENT NEWS HEADLINES (Google News):\n" + "\n".join(lines)
+
+
+def gather_source_text(queries: list[str], recency: str = "m", limit_per_query: int = 8) -> str:
+    return build_source_text(gather_source_items(queries, recency=recency, limit_per_query=limit_per_query))
+
+
+def _significant_words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(w) > 3}
+
+
+def _reattach_source_urls(raw: str, items: list[dict]) -> str:
+    """Point each extracted event at the article it came from.
+
+    The model is asked for a source_url but has only headlines to work from, so it
+    either returns null or invents a publisher homepage. Match each event back to the
+    feed item it most overlaps with and use that item's real link instead.
+    """
+    text = raw.strip()
+    fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if fence:
+        text = fence.group(1).strip()
+    try:
+        events = json.loads(text)
+    except json.JSONDecodeError:
+        return raw
+    if not isinstance(events, list):
+        return raw
+
+    pool = [(i, _significant_words(i["headline"])) for i in items if i.get("article_url")]
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        target = _significant_words(f"{event.get('headline', '')} {event.get('summary', '')}")
+        best, best_score = None, 0.0
+        for item, words in pool:
+            if not words:
+                continue
+            # Overlap as a share of the headline's own words, so a short headline
+            # isn't penalised for matching against a much longer summary.
+            score = len(target & words) / len(words)
+            if score > best_score:
+                best, best_score = item, score
+        # Half the headline in common is a confident match; below that, no link beats
+        # a wrong one -- a CSM forwarding the wrong article to a customer is worse.
+        event["source_url"] = best["article_url"] if best and best_score >= 0.5 else None
+    return json.dumps(events)
 
 
 def summarise_to_json(system_prompt: str, source_text: str, model: str = "gpt-4o-mini") -> str:
@@ -132,7 +193,9 @@ def research_to_json(
     """
     if not include_news:
         return None
-    source_text = gather_source_text(queries, recency=recency)
+    items = gather_source_items(queries, recency=recency)
+    source_text = build_source_text(items)
     if not source_text.strip():
         return None
-    return summarise_to_json(prompt, source_text)
+    raw = summarise_to_json(prompt, source_text)
+    return _reattach_source_urls(raw, items) if raw else raw

@@ -175,6 +175,9 @@ class OpportunityCard(BaseModel):
     # Short (<=2 line) active-voice instruction shown on the card face. `detail` carries
     # the fuller explanation, shown on demand (hover/click) rather than by default.
     detail: Optional[str] = None
+    # The article this card came from, for news-driven cards. Resolves in a browser
+    # (it's a Google News redirect), and is appended to the drafted email.
+    source_url: Optional[str] = None
     detected_at: str
     recipient_name: str
     recipient_role: str

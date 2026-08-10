@@ -39,6 +39,46 @@ _NOT_REAL_VENDORS = {
     "the linux foundation", "cncf", "nginx", "openssl", "w3c", "python software foundation",
 }
 
+_NEWS_NOISE_WORDS = {
+    "the", "and", "for", "with", "from", "that", "this", "into", "its", "has", "have",
+    "will", "new", "announced", "announces", "company", "million", "billion", "reports",
+}
+
+
+def _news_subjects(event, customer_name: str) -> set[str]:
+    """The distinctive named things an event is about -- the other company in a deal,
+    the product, the city. Capitalised words carry that, minus the customer's own name
+    (present in nearly every headline) and generic filler.
+    """
+    own = {w.lower() for w in re.findall(r"[A-Za-z0-9]+", customer_name)}
+    words = re.findall(r"\b[A-Z][A-Za-z0-9&.\-]{2,}", f"{event.headline} {event.summary}")
+    return {w.lower().strip(".") for w in words} - own - _NEWS_NOISE_WORDS
+
+
+def _dedupe_news_events(events, customer_name: str) -> list:
+    """Collapse several articles covering one event down to a single card.
+
+    Google News returns each story from multiple outlets, so an acquisition shows up
+    two or three times with different wording ("a $53bn takeover offer" vs "a cash
+    offer of $60.50 per share"). Text similarity is too blunt to catch that, but the
+    named subject isn't: same event type plus a shared distinctive name means the same
+    story. Distinct deals for one customer keep their own cards.
+    """
+    kept: list = []
+    kept_subjects: list[set[str]] = []
+    for event in events:
+        subjects = _news_subjects(event, customer_name)
+        duplicate = False
+        for i, existing in enumerate(kept):
+            if existing.event_type == event.event_type and subjects & kept_subjects[i]:
+                duplicate = True
+                break
+        if not duplicate:
+            kept.append(event)
+            kept_subjects.append(subjects)
+    return kept
+
+
 def _is_ignored_vendor(name: Optional[str]) -> bool:
     """Vendor detection returns names with legal suffixes attached ("Python Software
     Foundation Corp"), so comparing the whole string against _NOT_REAL_VENDORS misses
@@ -115,6 +155,7 @@ def _make_card(
     recipient: Optional[tuple[str, str]] = None,
     data_source: str = "live",
     detail: Optional[str] = None,
+    source_url: Optional[str] = None,
 ) -> OpportunityCard:
     recipient_name, recipient_role = recipient or _pick_recipient(customer, decision_makers, group)
     first_name = recipient_name.split(" ")[0] if recipient_name != "Primary Contact" else "there"
@@ -132,7 +173,13 @@ def _make_card(
         options.append(RecipientOption(name=customer.sponsor, role="Sponsor"))
 
     signer = _signer(customer)
-    body = f"Hello {first_name},\n\n{body_intro}\n\nKind regards,\n{signer}\nSecurityScorecard Customer Success"
+    # Congratulating someone on their own news reads better with the article attached --
+    # it shows you actually read it rather than reacting to an alert.
+    reference = f"\n\nFor reference: {source_url}" if source_url else ""
+    body = (
+        f"Hello {first_name},\n\n{body_intro}{reference}"
+        f"\n\nKind regards,\n{signer}\nSecurityScorecard Customer Success"
+    )
     return OpportunityCard(
         card_id=_card_id(customer.id, group, label, description, detail or "", recipient_name, detected_at),
         group=group,
@@ -152,6 +199,7 @@ def _make_card(
         recipient_options=options,
         subject=subject,
         body=body,
+        source_url=source_url,
     )
 
 
@@ -372,7 +420,7 @@ def build_opportunity_cards(
     # the "News" lane (group="engagement"), not "Suppliers" -- these are company events, not
     # detected vendor relationships. ---
     if news:
-        for event in news.events[:5]:
+        for event in _dedupe_news_events(news.events, customer.name)[:5]:
             meta = _NEWS_EVENT_META[event.event_type]
             card(
                 "engagement",
@@ -384,6 +432,7 @@ def build_opportunity_cards(
                 f"{event.summary} {meta['advice']}",
                 detected_at=event.date,
                 detail=event.summary,
+                source_url=event.source_url,
             )
 
     if decision_makers and decision_makers.people:

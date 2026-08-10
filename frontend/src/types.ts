@@ -127,6 +127,7 @@ export interface OpportunityCard {
   badge: string | null;
   description: string;
   detail: string | null;
+  source_url: string | null;
   detected_at: string;
   recipient_name: string;
   recipient_role: string;
