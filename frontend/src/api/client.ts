@@ -84,6 +84,23 @@ export const api = {
     }),
   getCapabilities: () => request<{ auto_research: boolean }>("/capabilities"),
   getAgentStatus: () => request<{ enabled: boolean; provider: string | null }>("/agent/status"),
+  getToday: (refresh = false) =>
+    request<{
+      date: string;
+      generated_at: string;
+      priorities: {
+        customer: string;
+        headline: string;
+        why: string;
+        action: string;
+        email_subject: string;
+        email_body: string;
+      }[];
+      tokens: { prompt: number; completion: number };
+      tool_calls: string[];
+      pseudonymised: boolean;
+      error?: string;
+    }>(`/today${refresh ? "?refresh=true" : ""}`),
   agentChat: (messages: { role: string; content: string }[]) =>
     request<{
       reply: string;

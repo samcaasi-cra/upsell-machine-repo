@@ -6,9 +6,10 @@ import { CustomerDetail } from "./components/CustomerDetail";
 import { CustomerTable } from "./components/CustomerTable";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
+import { TodayView } from "./components/TodayView";
 import type { CustomerSummary } from "./types";
 
-type Tab = "ask" | "opportunities" | "customers";
+type Tab = "today" | "ask" | "opportunities" | "customers";
 
 function App() {
   // null = still checking whether this deployment requires a password
@@ -36,7 +37,8 @@ function App() {
 }
 
 function Dashboard() {
-  const [tab, setTab] = useState<Tab>("opportunities");
+  // Today is the front door: the agent's decision, not a wall of data to scan.
+  const [tab, setTab] = useState<Tab>("today");
   const [rows, setRows] = useState<CustomerSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +90,7 @@ function Dashboard() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <nav style={{ display: "flex", gap: 4, background: "var(--surface-2)", borderRadius: 8, padding: 3 }}>
-            {(["ask", "opportunities", "customers"] as Tab[]).map((t) => (
+            {(["today", "ask", "opportunities", "customers"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => {
@@ -107,7 +109,13 @@ function Dashboard() {
                   boxShadow: tab === t ? "0 1px 2px var(--border)" : "none",
                 }}
               >
-                {t === "ask" ? "Ask" : t === "opportunities" ? "Opportunities" : "Customers"}
+                {t === "today"
+                  ? "Today"
+                  : t === "ask"
+                    ? "Ask"
+                    : t === "opportunities"
+                      ? "Opportunities"
+                      : "Customers"}
               </button>
             ))}
           </nav>
@@ -155,7 +163,9 @@ function Dashboard() {
         </p>
       )}
 
-      {tab === "ask" ? (
+      {tab === "today" ? (
+        <TodayView onSeeAll={() => setTab("opportunities")} />
+      ) : tab === "ask" ? (
         <AgentChat />
       ) : tab === "opportunities" ? (
         <OpportunityBoard />

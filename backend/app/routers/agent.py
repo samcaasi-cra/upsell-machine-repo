@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ..services import agent
+from ..services import agent, briefing
 
 router = APIRouter(tags=["agent"])
 
@@ -18,6 +18,20 @@ class ChatRequest(BaseModel):
 @router.get("/agent/status")
 def agent_status() -> dict:
     return {"enabled": agent.is_configured(), "provider": agent.active_provider()}
+
+
+@router.get("/today")
+def today(refresh: bool = False) -> dict:
+    """The agent's daily worklist. Cached per day unless refresh=true."""
+    if not agent.is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="No model configured — set ANTHROPIC_API_KEY or OPENAI_API_KEY in backend/.env.",
+        )
+    try:
+        return briefing.build(force=refresh)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Couldn't build today's briefing: {exc}") from exc
 
 
 @router.post("/agent/chat")

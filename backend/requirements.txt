@@ -1,8 +1,14 @@
-fastapi==0.115.0
+# fastapi/starlette are pinned as a pair: the mcp SDK requires starlette >=1.6, which
+# fastapi 0.115 rejects ("Router.__init__() got an unexpected keyword argument
+# 'on_startup'"). 0.141 is the first line that works with it.
+fastapi==0.141.1
+starlette==1.6.0
 uvicorn[standard]==0.30.6
 requests==2.32.3
 python-dotenv==1.0.1
-pydantic==2.9.2
+pydantic>=2.11
 openai>=1.68.0
 beautifulsoup4==4.12.3
 lxml==5.3.0
+# Exposes the agent tools over the Model Context Protocol (see MCP.md).
+mcp>=2.0.0

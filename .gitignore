@@ -26,6 +26,9 @@ backend/data/news_events/*.json
 # Runtime state for the daily research scheduler (last-run tracking)
 backend/data/research_schedule.json
 
+# The agent's cached daily briefing
+backend/data/briefing.json
+
 # Local demo baseline captured by demo.py -- machine-specific, not shared state
 backend/data/_demo_snapshot/
 
