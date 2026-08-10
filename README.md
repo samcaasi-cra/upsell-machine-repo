@@ -1,16 +1,30 @@
-# Upsell Machine — Project 5
+# Gaia ARR Growth Agent — Project 5
 
-An **agent** that reviews a SecurityScorecard portfolio and tells a CSM what to do
-today — built on SSC APIs, with no SSC frontend involved.
+An **AI agent that helps CSMs upsell existing customers** (e.g. from Titan Watch to
+Titan MAX) — built on SecurityScorecard APIs, with no SSC frontend involved.
 
-It reaches you three ways:
+The main interface is the **Opportunities** board: every signal across the portfolio,
+grouped into four lanes —
 
-- **Today** — three ranked actions with the outreach already drafted
-- **Ask** — questions about the portfolio in plain English
-- **MCP server** — the same tools in any MCP client, no interface of ours needed
+- **Own Cyber Posture** — evidence the customer's own security is already paying off
+- **Usage** — platform usage telling you the account is ready for more
+- **Suppliers** — third-party and sector risk detected outside the customer's own score
+- **News** — company news and people moments worth a direct, timely touch
 
-Plus an **Opportunities** board of every signal and a **Customers** drill-down, for
-when you want to inspect or override.
+Each card leads with a short, active-voice instruction ("Warn them: X is showing
+elevated risk"); the fuller explanation is a click away, not shown by default. A
+**Default / Detailed / Compact** toggle and a text-size control let a CSM pick how
+much detail is on screen at once, and a search/multi-select picker (with customer
+logos) narrows the board to specific accounts instead of scanning everyone.
+
+It also reaches you via an **MCP server** — the same tools in any MCP client, no
+interface of ours needed. See [MCP.md](MCP.md).
+
+The **Today** (agent-drafted daily priorities), **Ask** (plain-English portfolio Q&A),
+and **Customers** (per-account drill-down) views are still fully implemented in the
+codebase — backend endpoints and frontend components both — but aren't wired into the
+nav, since Opportunities is the one view CSMs use day to day. See
+[frontend/src/App.tsx](frontend/src/App.tsx) if you want to bring one back.
 
 - **[IMPLEMENTED.md](IMPLEMENTED.md)** — what's built, trigger coverage, data
   provenance, limitations, criteria self-assessment. Start here if you're reviewing.
@@ -91,27 +105,31 @@ http://localhost:8000/docs.
 
 ## Using it
 
-**Today** — the landing screen. The agent reviews every account, drills into the ones
-that matter, and gives you three ranked actions with the outreach already drafted.
-Cached per day; *Refresh* rebuilds it.
+**Opportunities** is the landing screen and the only view in the nav — every signal,
+across four lanes (Own Cyber Posture, Usage, Suppliers, News). A few things to know:
 
-**Ask** — questions in plain English: *"which accounts should I prioritise this week?"*
-The tool chips show which data the agent chose to fetch, and each answer reports its
-token cost.
-
-**Opportunities** — every signal, four lanes, with account-chip filtering. Click a card
-for an editable drafted email with a recipient dropdown. Tick *"Show unbuilt triggers
-as concepts"* for illustrative cards covering the triggers that aren't built yet.
-
-**Customers** — per-account detail: SSC score chart, usage breakdown, tracked
-decision-makers, tracked news. "Add customer" adds one by hand; "Sync from portfolio"
-imports anything added directly in the SecurityScorecard UI.
+- Each card shows a short, active-voice instruction by default (e.g. "Flag rising slot
+  usage before it hits the licensed cap."). Click the **ⓘ** to see the fuller
+  explanation, or switch to the **Detailed** view to show it inline for every card.
+- **Default / Detailed / Compact** (top right) trade off how much is on screen at once;
+  Compact fits far more per lane without scrolling. **A− / A+** scales text size. Both
+  choices persist across reloads.
+- **Select customers** searches and multi-selects accounts (with logos, falling back to
+  initials avatars when a domain has no logo) to narrow the board — the default with
+  nothing selected is "Showing all customers."
+- Click a card for an editable drafted email with a recipient dropdown. Tick *"Show
+  unbuilt triggers as concepts"* for illustrative cards covering triggers that aren't
+  built yet.
+- **View in SecurityScorecard** links out to the team's portfolio in the SSC platform.
 
 **MCP** — connect Claude Desktop to the same tools and skip the UI entirely.
 See [MCP.md](MCP.md).
 
-Both agent features need `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`). Without one, Today
-and Ask explain what's missing and the other views work normally.
+**Today** and **Ask** (agent-drafted daily priorities and plain-English portfolio Q&A)
+still work if you wire them back into the nav — both need `OPENAI_API_KEY` (or
+`ANTHROPIC_API_KEY`) to function. **Customers** (per-account drill-down: SSC score
+chart, usage breakdown, tracked decision-makers and news, "Add customer" / "Sync from
+portfolio") is likewise still implemented but not in the nav.
 
 **Research** — two ways to populate decision-makers and news:
 - *Auto-research* (needs `OPENAI_API_KEY`) — searches and extracts automatically. Works
@@ -149,7 +167,16 @@ backend/
   demo.py        Snapshot/restore for demos
 frontend/
   src/
-    components/  Board, customer views, email drawer, modals
+    components/
+      OpportunityBoard.tsx   The main (and only nav'd) view
+      CustomerPicker.tsx     Search + multi-select customer filter, with logos
+      CustomerLogo.tsx       Clearbit logo lookup, initials-avatar fallback
+      BoardControls.tsx      Default/Detailed/Compact + text-size controls
+      InfoPopover.tsx        Click-to-reveal detail affordance ("ⓘ")
+      icons.tsx              Small inline SVG icon set
+      EmailDrawer.tsx        Editable drafted email for a card
+      TodayView.tsx, AgentChat.tsx, CustomerTable.tsx,
+      CustomerDetail.tsx, ...  Today/Ask/Customers views (not in the nav, see above)
     api/client.ts
 ```
 
