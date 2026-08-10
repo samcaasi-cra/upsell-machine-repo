@@ -1,16 +1,14 @@
-# Upsell Machine — Project 5
+# Gaia ARR Growth Agent — Project 5
 
-An **agent** that reviews a SecurityScorecard portfolio and tells a CSM what to do
-today — built on SSC APIs, with no SSC frontend involved.
+Watches a SecurityScorecard portfolio and tells a CSM which accounts to act on and what
+to say. Built on SSC APIs, with no SSC frontend involved.
 
-It reaches you three ways:
-
-- **Today** — three ranked actions with the outreach already drafted
-- **Ask** — questions about the portfolio in plain English
-- **MCP server** — the same tools in any MCP client, no interface of ours needed
-
-Plus an **Opportunities** board of every signal and a **Customers** drill-down, for
-when you want to inspect or override.
+- **The board** — every signal we can detect, in four lanes, each card carrying a
+  drafted email with the recipient already resolved
+- **Daily research** — searches the news for every account and extracts structured
+  events, unattended, once a day
+- **MCP server** — the same portfolio tools in any MCP client, no interface of ours
+  needed
 
 - **[IMPLEMENTED.md](IMPLEMENTED.md)** — what's built, trigger coverage, data
   provenance, limitations, criteria self-assessment. Start here if you're reviewing.
@@ -50,7 +48,8 @@ cp backend/.env.example backend/.env
 | Variable | Required | What it does |
 |---|---|---|
 | `API_KEY` | **Yes** | SecurityScorecard. Nothing works without it. |
-| `OPENAI_API_KEY` | No | Enables the "Auto-research" buttons. Without it those disable and the copy/paste research flow still works. |
+| `OPENAI_API_KEY` | No | Enables automated research and the agent. Without it, research falls back to copy/paste and the agent endpoints explain what's missing. |
+| `CSM_NAME` | No | Who the app greets and who signs drafted emails. Defaults to `Alex`. |
 | `APP_PASSWORD` | No | Adds a login screen. **Leave blank locally**; only set it when deploying. |
 
 ### 3. Frontend
@@ -80,46 +79,58 @@ npm run dev
 
 Then open **http://localhost:5173**.
 
+The frontend expects the backend on port **8000** and the backend allows CORS from
+**5173**, so keep both ports as they are unless you change both ends.
+
 The first load takes a few seconds — the board fans out to SecurityScorecard for every
 customer. Responses are cached for 10 minutes, so it's instant after that.
 
 To check the backend on its own: http://localhost:8000/health should return
-`{"status":"ok","auth_required":false}`. Interactive API docs are at
+`{"status":"ok","auth_required":false,"csm_name":"Alex"}`. Interactive API docs are at
 http://localhost:8000/docs.
 
 ---
 
 ## Using it
 
-**Today** — the landing screen. The agent reviews every account, drills into the ones
-that matter, and gives you three ranked actions with the outreach already drafted.
-Cached per day; *Refresh* rebuilds it.
+The app is a single **Opportunities board**.
 
-**Ask** — questions in plain English: *"which accounts should I prioritise this week?"*
-The tool chips show which data the agent chose to fetch, and each answer reports its
-token cost.
+**Four lanes** — *Own Cyber Posture*, *Usage*, *Suppliers*, *News*. Each card leads with
+a short instruction; click the info icon for the fuller explanation behind it.
 
-**Opportunities** — every signal, four lanes, with account-chip filtering. Click a card
-for an editable drafted email with a recipient dropdown. Tick *"Show unbuilt triggers
-as concepts"* for illustrative cards covering the triggers that aren't built yet.
+**Click any card** for the drafted email: editable subject and body, a recipient
+dropdown covering every tracked decision-maker, reset-to-default, and copy. News cards
+also carry a link to the source article, which is appended to the email.
 
-**Customers** — per-account detail: SSC score chart, usage breakdown, tracked
-decision-makers, tracked news. "Add customer" adds one by hand; "Sync from portfolio"
-imports anything added directly in the SecurityScorecard UI.
+**Customer picker** filters the board to the accounts you care about. **View modes**
+(Default / Detailed / Compact) and the text-size control adjust density.
 
-**MCP** — connect Claude Desktop to the same tools and skip the UI entirely.
-See [MCP.md](MCP.md).
+**Provenance icons** in the legend explain where each kind of data comes from. Tick
+**"Show unbuilt triggers as concepts"** for illustrative cards covering the triggers
+that aren't built yet — each names the data source it's waiting on.
 
-Both agent features need `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`). Without one, Today
-and Ask explain what's missing and the other views work normally.
+**"Auto-researched <date> · Run now"** is the daily research agent. It runs once per day
+while the backend is up; the button forces a run.
 
-**Research** — two ways to populate decision-makers and news:
+### Reaching the agent
+
+The tool-calling agent isn't linked from the board. Two ways in:
+
+- **MCP** — connect Claude Desktop to the same tools and work the portfolio
+  conversationally. See [MCP.md](MCP.md). This is the recommended path.
+- **The API** — `POST /agent/chat` for questions, `GET /today` for a ranked worklist
+  with drafted emails.
+
+Both need `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`).
+
+### Research
+
+Two ways to populate decision-makers and news:
+
 - *Auto-research* (needs `OPENAI_API_KEY`) — searches and extracts automatically. Works
   well for news; rarely finds decision-makers, see IMPLEMENTED.md for why.
 - *Manual* — generates a prompt you run in Claude yourself, then paste the JSON back.
   This is the better path for decision-makers.
-
-News research also runs automatically once per day while the backend is up.
 
 ---
 
@@ -142,14 +153,15 @@ cd backend
 backend/
   app/
     routers/     HTTP endpoints
-    services/    SSC client, research, signal logic, scheduler
+    services/    SSC client, research, signal logic, scheduler, agent
     models.py    Pydantic schemas shared across the API
     storage.py   JSON-file persistence
   data/          Customer roster + research caches (caches are gitignored)
   demo.py        Snapshot/restore for demos
+  mcp_server.py  The tools over Model Context Protocol
 frontend/
   src/
-    components/  Board, customer views, email drawer, modals
+    components/  Board, customer picker, email drawer, controls
     api/client.ts
 ```
 
@@ -160,17 +172,21 @@ frontend/
 **Board is empty / "Failed to load".** Backend isn't running, or `API_KEY` is missing
 from `backend/.env`. Check http://localhost:8000/health.
 
+**Cards show but details are blank.** The backend is running older code than the
+frontend expects — restart it. Use `--reload` so it picks changes up automatically.
+
 **A customer shows "Score unavailable".** That domain isn't resolving in
 SecurityScorecard — usually a typo in the domain, or a domain SSC doesn't track.
 
-**Auto-research buttons are greyed out.** No `OPENAI_API_KEY` in `.env`. Expected —
-use the copy/paste flow.
+**Console shows repeated `ERR_NAME_NOT_RESOLVED`.** Company logos are fetched from
+`logo.clearbit.com`, which doesn't resolve here. Harmless — every card falls back to an
+initials avatar. Known, and left alone deliberately.
+
+**Auto-research is unavailable.** No `OPENAI_API_KEY` in `.env`. Expected — use the
+copy/paste flow.
 
 **Auto-research says "no new events found".** Working correctly — it found nothing new
 since last time. It dedupes against what's already cached.
-
-**Auto-research fails with a search error.** DuckDuckGo rate-limits after repeated use.
-Wait a while, or use the copy/paste flow. News research still works via Google News.
 
 **A login screen appears locally.** `APP_PASSWORD` is set in your `.env` — clear it for
 local development.

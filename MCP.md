@@ -9,8 +9,11 @@ A CSM opens Claude Desktop and asks *"which of my accounts need attention today?
 and gets an answer grounded in live SecurityScorecard data.
 
 It's a second **entry point**, not a second implementation. Every tool delegates to the
-same functions in `app/services/agent_tools.py` that back the Ask tab, so the two can't
-drift apart.
+same functions in `app/services/agent_tools.py` that back the `/agent/chat` endpoint, so
+the two can't drift apart.
+
+Since the board doesn't link to the agent, **this is the primary way to reach it** — and
+the clearest demonstration that the workflow isn't tied to any interface we built.
 
 ---
 

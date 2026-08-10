@@ -2,43 +2,53 @@
 
 Project 5: Customer Upsell, Retention & Decision-Making Automation.
 Built for the SSC Hackathon theme *Agentic, API-First: Reimagine a Core Workflow*.
-Last updated: 10 August 2026.
+Last updated: 11 August 2026.
 
 ---
 
 ## The app in one paragraph
 
-An **agent** that reviews a SecurityScorecard portfolio and tells a CSM what to do
-today. It reaches them three ways: **Today** hands back three ranked actions with the
-outreach already drafted; **Ask** answers questions about the portfolio in plain
-English; and an **MCP server** exposes the same tools to any MCP client, so a CSM can
-work from Claude Desktop with no interface of ours involved. Two supporting views
-remain for inspection and override — an **Opportunities** board of every signal, and a
-**Customers** drill-down per account. Everything is built on SSC APIs; none of it uses
-an existing SSC frontend.
+**Gaia ARR Growth Agent** watches a SecurityScorecard portfolio and tells a CSM which
+accounts to act on and what to say. The screen is a single **Opportunities** board:
+every signal we can detect, in four lanes, each card carrying a drafted email with the
+recipient already resolved. Behind it, two things run without being asked — a **daily
+research agent** that searches the news for every account and extracts structured
+events, and an **MCP server** that exposes the same portfolio tools to any MCP client,
+so a CSM can work the portfolio from Claude Desktop with no interface of ours involved.
+Everything is built on SSC APIs; none of it uses an existing SSC frontend.
 
-### Why it isn't a dashboard
+### Where the agent actually is
 
-The brief warns against building another dashboard, and it's right to. A board of 38
-signals across 13 accounts makes the CSM the reasoning engine — they scan, filter,
-prioritise and decide.
+The brief warns against building another dashboard. Worth being precise about how far
+we escape that, because the honest answer is "partly".
 
-**Today** inverts that. The agent surveys every account, drills into the ones that
-matter, and returns three things to do in order, each with the email written. The CSM
-approves or skips. The board still exists, because someone will always want to see
-everything — but it's the fallback, not the front door.
+**The board itself is not agentic.** It's deterministic rules over live SSC data. Good
+engineering, but a rules engine — the CSM still scans and prioritises.
+
+**Two things behind it are.** The daily research agent picks queries per account, pulls
+Google News, and decides which stories are real acquisitions, expansions or launches
+before extracting them — unattended, on a schedule, with an LLM making the judgement
+calls. And the MCP server hands a tool-calling agent the same four tools, letting it
+choose which accounts to examine rather than following a fixed query.
+
+**What isn't reachable from the current UI.** A `Today` briefing endpoint (three ranked
+actions with drafted emails) and an `Ask` conversational agent are both built, tested
+and live at `/today` and `/agent/chat` — but the UI was consolidated to the single board
+and no longer links to them. They remain available over the API and through MCP. This is
+a deliberate team decision to keep one clean surface, not an abandoned feature.
 
 ---
 
-## The three entry points
+## The entry points
 
-| Entry point | What it is | Why it exists |
+| Entry point | What it is | Status |
 |---|---|---|
-| **Today** | Agent-produced worklist: 3 ranked actions, reasons, drafted emails. Cached daily | The default. A decision, not a data dump |
-| **Ask** | Conversational agent over live data, showing which tools it chose and tokens used | Ad-hoc questions a fixed view can't anticipate |
-| **MCP server** | The same tools over Model Context Protocol | Works with no frontend at all — see [MCP.md](MCP.md) |
+| **Opportunities board** | Every signal, four lanes, drafted email per card | **The UI.** What you see on screen |
+| **Daily research agent** | Searches news per account, extracts structured events, unattended | **Running.** Surfaced as "Auto-researched <date> · Run now" |
+| **MCP server** | The same portfolio tools over Model Context Protocol | **Working.** The agentic demo — see [MCP.md](MCP.md) |
+| **`/today`, `/agent/chat`** | Ranked worklist; conversational agent | **Built, API-only.** No UI path in the current design |
 
-All three share one tool layer (`app/services/agent_tools.py`), so they cannot drift
+All of them share one tool layer (`app/services/agent_tools.py`), so they cannot drift
 apart.
 
 ---
@@ -52,7 +62,7 @@ The UI labels this everywhere, but to be explicit:
 | SSC scores, grades, industry, score history | SecurityScorecard API | **Live** |
 | Third-party supplier detection + their scores | SecurityScorecard API | **Live** |
 | Customer roster | `backend/data/customers.json` + SSC portfolio sync | **Live** |
-| News events (acquisitions, offices, launches) | Google News RSS → OpenAI extraction | **Live, cached** |
+| News events (acquisitions, offices, launches) | Google News RSS → OpenAI extraction | **Live, cached**, with a link to the source article |
 | Decision-makers / job titles | Research prompt run in Claude, pasted back | **Live, cached** |
 | Agent reasoning (Today, Ask) | Live tool calls over the above | **Live** |
 | Platform usage (logins, slots, reports) | Deterministic placeholder generator | **Sample** — marked `◇ Sample data` |
@@ -76,12 +86,12 @@ reveal them, which turns the board into the full 23-trigger product vision. They
 distributed one per account rather than stamped on every customer, so the board stays
 legible and looks like a realistic spread of activity.
 
-The Opportunities board carries a provenance legend; the Customers table marks each
-column `● live SSC` / `◆ researched` / `◇ sample`.
+The board legend carries an icon per tier, each with a click-through explaining what
+that source is.
 
 ---
 
-## Trigger coverage: 14 of 23
+## Trigger coverage: 13 built, all 23 represented
 
 Against the ranked trigger list in *"Automate customer engagement opportunities to
 drive ARR growth"*.
@@ -104,7 +114,8 @@ drive ARR growth"*.
 | 19 | Alumni joins another customer org | Cross-customer decision-maker diffing |
 | 21 | New user logs in for the first time | Sample usage |
 
-Trigger #3 currently surfaces on the Customers table only, not as a board card.
+Trigger #3 is computed by the signal layer and served over `/signals`, but has no card
+of its own on the board — it shows up as part of the Usage lane's slot-capacity signal.
 
 ### Not built — blocked on data or access
 
@@ -121,42 +132,39 @@ showing what it would surface once the data source exists.
 | 16 | Share price up vs peers | Stock market data API |
 | 18 | Customer compliment in Customer Forum | Access to whichever forum tool this is |
 | 20 | A DMU posts about cybersecurity | Social listening; LinkedIn API is partner-gated |
-| 22 | A non-DMU user posts about cybersecurity | Same as #20 |
+| 22 | A non-DMU user posts about cybersecurity | Same as #20 — but a distinct play: spotting a potential champion, not replying to a known contact |
 | 23 | Upcoming CSM meeting identified | Salesforce / calendar integration |
 
 ---
 
 ## Features
 
-**Today** (landing screen)
-- Agent surveys every account, drills into what matters, returns 3 ranked actions
-- Each carries the reason, the concrete next step, and a drafted email
-- Cached per calendar day; "Refresh" forces a rebuild
-- Shows token cost and that identities were masked
+**Opportunities board** (the whole UI)
+- Greets the current CSM by name; the same name signs every drafted email
+- Four lanes: **Own Cyber Posture**, **Usage**, **Suppliers**, **News**
+- Searchable multi-select customer picker with logos, filtering the board
+- Default / Detailed / Compact view modes plus a text-size control
+- Short active-voice copy on each card, with the fuller explanation on click
+- Provenance icons with click-through info, and the concept-card toggle
+- Daily research status + "Run now"
+- Static link out to the SecurityScorecard portfolio
 
-**Ask** (conversational agent)
-- Natural-language questions over live portfolio data
-- Displays which tools the agent chose to call, and the tokens each answer cost
-- Suggested questions to start from
+**Email drawer** (click any card)
+- **Editable** subject and body, **recipient dropdown** (any tracked decision-maker or
+  the sponsor), reset-to-default, copy to clipboard, mark-as-actioned (session-only)
+- For news cards, a link to the source article — shown in the drawer and appended to
+  the drafted email, so a CSM congratulating someone has the story attached
 
 **MCP server** — the same tools over Model Context Protocol, so any MCP client can
 drive the workflow with no frontend of ours. See [MCP.md](MCP.md).
 
-**Opportunities board**
-- Four lanes: Proof of Value, Adoption Signals, Expansion Events, Engagement Prompts
-- Account chips with live SSC grade + score, filter the board by account
-- Per-card drafted email with resolved recipient
-- Email drawer: **editable** subject and body, **recipient dropdown** (any tracked
-  decision-maker or the sponsor), reset-to-default, copy to clipboard,
-  mark-as-actioned (session-only)
-- Daily research status + "Run now"
-
-**Customers tab**
-- Risk-sorted table with signal badges and per-column provenance labels
-- Detail view: SSC score chart, usage breakdown, decision-maker table with LinkedIn
-  links, news table
-- Add customer manually, or **Sync from portfolio** to import anything added directly
-  in the SecurityScorecard UI
+**Built, but not surfaced in the current UI**
+- `/today` — agent surveys every account, drills into what matters, returns 3 ranked
+  actions with drafted emails. Cached per calendar day
+- `/agent/chat` — conversational agent over live portfolio data, reporting which tools
+  it chose and the tokens each answer cost
+- `/customers/*` — per-account detail, manual add, and **Sync from portfolio** to
+  import anything added directly in the SecurityScorecard UI
 
 **Research**
 - *Automated*: news research runs daily across all customers, and on demand per
@@ -202,27 +210,30 @@ to demo research populating from empty. Only touches `backend/data/`; never cred
 
 ### Suggested walkthrough (3–5 minutes)
 
-Lead with the agent. The board is supporting evidence, not the story.
+Open on the board. Land the autonomy claim early, then finish in Claude Desktop.
 
-1. **Today** — open on it. *"The agent reviewed all 13 accounts and picked 3 worth your
-   time."* Read the top one aloud: the reason cites real numbers. Expand the draft
-   email. Point at the footer — **N tool calls, ~5k tokens, once a day**.
-2. **Ask** — type *"who has supplier risk I should know about?"*. Point at the tool
-   chips as they appear: **it chose `list_customers`, then drilled into two accounts.**
-   That's the agent deciding, not a fixed query.
-3. **Say the privacy line** — *"the model never saw a customer name. It saw CUST_A with
-   a score. We tested that no identifier leaks, including inside free text."*
-4. **Opportunities** — *"and if you want everything, it's here"* — legend, lanes, a
-   `◇ Sample data` card called out honestly.
+1. **The board** — *"38 open opportunities across 13 accounts, and every one of them
+   came from a live API call."* Walk the four lanes in a sentence each.
+2. **Open a News card.** The drafted email is already addressed to the right person,
+   with the article attached. *"The CSM edits or sends. They don't write from scratch."*
+3. **Point at "Auto-researched <date> · Run now".** This is the strongest autonomy
+   line, and it's verifiable: *"that ran by itself this morning, across all 13 accounts,
+   and added 5 events. Nobody triggered it."*
+4. **Say the privacy line** — *"when a model is involved, it never sees a customer name.
+   It sees CUST_A with a score. We tested that no identifier leaks, including inside
+   free text."*
 5. **Tick "Show unbuilt triggers as concepts"** — the full 23-trigger vision, each card
    naming the data source it's waiting on. Turns "what's missing" into a shopping list.
-6. **Close on architecture**: every gap is a connection, not a rebuild — news already
-   made exactly that transition from manual to automated with no prompt or parser
-   change. And mention **MCP**: the same tools work with no frontend at all.
+   **This is the moment that separates you from a team that faked it.**
+6. **Finish in Claude Desktop over MCP.** Ask *"which accounts have supplier risk I
+   should know about?"* and let the tool calls show. *"Same data, same tools, no UI of
+   ours involved — the agent decides what to look at."*
 
-**If asked "what's actually agentic here?"** — the agent chooses which accounts to
-examine. It surveys 13 cheaply, then fetches detail on 3. Nobody wrote that rule; it
-decides per question, and you can watch it decide in the Ask tab.
+**If asked "what's actually agentic here?"** — be straight: the board is rules, and the
+rules are honest. The agency is in two places. The daily research agent decides which
+stories are real events worth surfacing, unattended. And over MCP, the agent chooses
+which accounts to examine — it surveys 13 cheaply, then drills into two or three.
+Nobody wrote that rule; it decides per question, and you can watch it decide.
 
 ---
 
@@ -299,7 +310,7 @@ Stated plainly, because they matter for judging what's demo-ready vs production-
   so demos are stable, and everything derived from it is tagged `◇ Sample data` in the
   UI. It is *shaped* like a real feed, so swapping in real data is a module swap.
 - **Sponsor / CSM assignments are seed data.** No CRM is connected.
-- **9 of 23 triggers aren't built**, all blocked on data we don't have access to
+- **10 of 23 triggers aren't built**, all blocked on data we don't have access to
   (breach feeds, supplier portfolios, share price, forum/social, CRM) — not on
   engineering effort.
 
@@ -309,6 +320,21 @@ Stated plainly, because they matter for judging what's demo-ready vs production-
 - **News research is headline-only.** We removed the article-body scraper (it relied on
   an anti-bot bypass and had stopped working), so extraction works from Google News
   headlines, dates and publishers rather than full text.
+- **Article links are Google News redirects.** The feed never exposes the publisher's
+  own URL, so the link is a long `news.google.com` redirect. It resolves correctly in a
+  browser, but reads like a tracking link if a CSM forwards it untouched.
+- **Some news is adjacent rather than about the customer.** A headline like "Synchrony
+  expands CareCredit through a partnership with Stripe" is filed under Stripe. Still a
+  usable hook, but it's the partner's news.
+
+**Interface**
+- **The agent has no UI.** `/today` and `/agent/chat` are built and working but the
+  consolidated board doesn't link to them, so the tool-calling agent is only reachable
+  over MCP or the API. Deliberate, but it means a judge looking only at the screen sees
+  automation rather than agency.
+- **Company logos don't load.** The board requests them from `logo.clearbit.com`, which
+  doesn't resolve in our environment; every card falls back to an initials avatar, and
+  the failed requests show as console errors. Cosmetic, and left as-is by team decision.
 - **Research quality is only as good as public reporting.** Small or private companies
   produce thin results.
 
@@ -406,16 +432,19 @@ An honest self-assessment, including where we're weak.
 
 | Criterion | Where we stand | Read |
 |---|---|---|
-| **Fits theme** — genuinely agentic and API-first? | **Agentic:** a real tool-calling agent that decides what to examine, exposed three ways including MCP. **API-first:** everything from SSC APIs, our own frontend, and via MCP no frontend at all. **Reimagined:** Today turns 38 signals into 3 decisions. *Weak spot: we're on PV1, not Titan* | Strong |
+| **Fits theme** — genuinely agentic and API-first? | **Agentic:** a daily research agent that runs unattended and decides what counts as a real event, plus a tool-calling agent over MCP that chooses which accounts to examine. **API-first:** everything from SSC APIs, and via MCP no frontend at all. *Weak spots: we're on PV1 not Titan, and the on-screen board is rules rather than agency* | Good, not Strong |
 | **Practicality** | Real CSM problem from the actual project brief, live SSC data, honest labelling of what's placeholder | Strong |
 | **Business potential** | Directly ARR-linked. Deployment config, auth and a documented POC→production path already exist | Strong |
 | **Token efficiency** | ~4.4k tokens per Ask query, ~5.2k for a daily briefing, on a low-cost model. Tools return the smallest useful shape so the agent surveys cheaply and drills selectively. Token count is visible in the UI | **Probably our strongest, and most teams will ignore this criterion** |
-| **Wow factor** | Three entry points, live data, visible agent reasoning, editable drafted emails, honest provenance | Good |
+| **Wow factor** | Live data end to end, unattended daily research, editable drafted emails with the source article attached, honest provenance, and the concept toggle revealing the full 23-trigger vision | Good |
 
 **Where we're genuinely weak:**
 - **Not using Titan**, which the brief calls the primary target.
 - **Platform usage is placeholder**, and four triggers depend on it.
-- **9 of 23 triggers unbuilt** — all data-blocked, but still unbuilt.
+- **10 of 23 triggers unbuilt** — all data-blocked, but still unbuilt.
+- **The agent isn't visible on screen.** Our strongest agentic assets — the tool-calling
+  loop and the ranked worklist — need MCP or the API to reach. A judge who only watches
+  the demo screen won't see them unless we show them.
 - **No automated tests.** Verification has been manual against live data.
 
 **The strongest single claim we can make:** the agent decides which accounts to
