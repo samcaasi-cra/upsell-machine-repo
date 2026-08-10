@@ -78,6 +78,7 @@ def get_opportunity_board(include_concepts: bool = False) -> OpportunityBoardRes
             AccountChip(
                 customer_id=customer.id,
                 customer_name=customer.name,
+                domain=customer.domain,
                 industry=score.industry,
                 score=score.current_score,
                 grade=score.current_grade,

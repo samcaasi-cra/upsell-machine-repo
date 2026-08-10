@@ -1,29 +1,38 @@
 import { useCallback, useEffect, useState } from "react";
 import "./OpportunityBoard.css";
 import { api } from "../api/client";
+import { BoardControls, loadFontScale, loadViewMode, useFontScale, type ViewMode } from "./BoardControls";
+import { CustomerLogo } from "./CustomerLogo";
+import { CustomerPicker } from "./CustomerPicker";
 import { EmailDrawer } from "./EmailDrawer";
-import type { AccountChip, OpportunityBoardResponse, OpportunityCard, OpportunityGroup, Sentiment } from "../types";
+import { ExternalLinkIcon, LiveIcon, ResearchedIcon, SampleIcon } from "./icons";
+import { InfoPopover } from "./InfoPopover";
+import type { OpportunityBoardResponse, OpportunityCard, OpportunityGroup } from "../types";
+
+// Static per confirmation with the team -- update here if the portfolio moves.
+const SSC_PORTFOLIO_URL =
+  "https://platform.securityscorecard.io/#/portfolios/0a74076a-b02b-5ac9-b1d1-2b60e023ca5a/companies";
 
 export const GROUPS: { key: OpportunityGroup; label: string; blurb: string }[] = [
   {
     key: "proof",
-    label: "Proof of Value",
-    blurb: "Evidence the platform is already paying off — cite it before the customer asks.",
+    label: "Own Cyber Posture",
+    blurb: "Evidence the customer's own security is already paying off — cite it before they ask.",
   },
   {
     key: "adoption",
-    label: "Adoption Signals",
-    blurb: "Usage telling you the account is ready for more — deepen or expand it now.",
+    label: "Usage",
+    blurb: "Platform usage telling you the account is ready for more — deepen or expand it now.",
   },
   {
     key: "expansion",
-    label: "Expansion Events",
-    blurb: "Business change from outside SSC that changes what needs covering.",
+    label: "Suppliers",
+    blurb: "Third-party and sector risk detected outside the customer's own score.",
   },
   {
     key: "engagement",
-    label: "Engagement Prompts",
-    blurb: "People and moments worth a direct, timely touch.",
+    label: "News",
+    blurb: "Company news and people moments worth a direct, timely touch.",
   },
 ];
 
@@ -37,19 +46,19 @@ function relTime(iso: string): string {
   return `${past} day${past === 1 ? "" : "s"} ago`;
 }
 
-function gradePillClass(sentiment: Sentiment): string {
-  return `opp-grade-pill opp-grade-${sentiment}`;
-}
-
 export function OpportunityBoard() {
   const [board, setBoard] = useState<OpportunityBoardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [actioned, setActioned] = useState<Set<string>>(new Set());
   const [research, setResearch] = useState<Awaited<ReturnType<typeof api.getResearchStatus>> | null>(null);
   const [showConcepts, setShowConcepts] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
+  const [fontScale, setFontScale] = useState<number>(loadFontScale);
+
+  useFontScale(fontScale);
 
   const loadBoard = useCallback(() => {
     api
@@ -99,40 +108,37 @@ export function OpportunityBoard() {
   if (error) return <p style={{ color: "var(--status-critical)" }}>Failed to load: {error}</p>;
   if (!board) return null;
 
-  const visibleCards = selectedAccountId
-    ? board.cards.filter((c) => c.customer_id === selectedAccountId)
-    : board.cards;
+  const visibleCards = selectedIds.size === 0 ? board.cards : board.cards.filter((c) => selectedIds.has(c.customer_id));
   const accountsWithOpps = new Set(visibleCards.map((c) => c.customer_id));
   const totalCount = visibleCards.length;
   const openCard = openCardId ? board.cards.find((c) => c.card_id === openCardId) ?? null : null;
+  const domainByCustomerId = new Map(board.chips.map((c) => [c.customer_id, c.domain]));
 
   return (
-    <div className="opp-board">
+    <div className="opp-board" data-view={viewMode}>
       <header className="opp-topbar">
-        <div>
-          <span className="opp-eyebrow">SecurityScorecard · Customer Success</span>
-          <h2>Opportunity Signals</h2>
-        </div>
-        <div className="opp-topbar-meta">
-          <span className="opp-illustrative-badge">Live SSC scores · sample usage data</span>
+        <div className="opp-topbar-primary">
           <span className="opp-live-count">
-            <span className="opp-live-dot" aria-hidden="true" />
-            {totalCount} open opportunit{totalCount === 1 ? "y" : "ies"} across {accountsWithOpps.size} account
-            {accountsWithOpps.size === 1 ? "" : "s"}
+            {totalCount} open opportunit{totalCount === 1 ? "y" : "ies"}
+            <span className="opp-live-count-sub">
+              across {accountsWithOpps.size} account{accountsWithOpps.size === 1 ? "" : "s"}
+            </span>
           </span>
+          <a className="opp-portfolio-link" href={SSC_PORTFOLIO_URL} target="_blank" rel="noreferrer">
+            View in SecurityScorecard <ExternalLinkIcon />
+          </a>
+        </div>
+        <div className="opp-topbar-controls">
+          <BoardControls viewMode={viewMode} onViewMode={setViewMode} fontScale={fontScale} onFontScale={setFontScale} />
           {research && (
-            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.68rem", color: "var(--slate)" }}>
+            <span className="opp-research-status">
               {research.running
                 ? "Daily research running…"
                 : research.last_run_at
                   ? `Auto-researched ${new Date(research.last_run_at).toLocaleDateString()}`
                   : "Auto-research runs daily"}
               {research.enabled && !research.running && (
-                <button
-                  onClick={handleRunNow}
-                  className="opp-btn"
-                  style={{ fontSize: "0.68rem", padding: "3px 8px" }}
-                >
+                <button onClick={handleRunNow} className="opp-btn opp-btn-tiny">
                   Run now
                 </button>
               )}
@@ -141,41 +147,26 @@ export function OpportunityBoard() {
         </div>
       </header>
 
-      <nav className="opp-account-strip" aria-label="Filter opportunities by account">
-        {board.chips.map((chip: AccountChip) => {
-          const pressed = selectedAccountId === chip.customer_id;
-          return (
-            <button
-              key={chip.customer_id}
-              type="button"
-              className="opp-account-chip"
-              aria-pressed={pressed}
-              onClick={() => setSelectedAccountId(pressed ? null : chip.customer_id)}
-            >
-              <span className={gradePillClass(chip.sentiment)}>{chip.grade ?? "—"}</span>
-              <span className="opp-chip-text">
-                <span className="opp-chip-name">{chip.customer_name}</span>
-                <span className="opp-chip-industry">
-                  {chip.industry ? chip.industry.replace(/_/g, " ") : "—"}
-                  {chip.score !== null && ` · ${chip.score}`}
-                </span>
-              </span>
-              <span className={`opp-chip-count${chip.open_opportunities === 0 ? " zero" : ""}`}>
-                {chip.open_opportunities}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+      <div className="opp-picker-row">
+        <CustomerPicker chips={board.chips} selected={selectedIds} onChange={setSelectedIds} />
+      </div>
 
       <div className="opp-legend">
-        <strong style={{ fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          Where this data comes from
-        </strong>
-        <label
-          style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", marginLeft: "auto" }}
-          title="Show illustrative cards for triggers from the brief that aren't built yet"
-        >
+        <span className="opp-legend-item">
+          <LiveIcon style={{ color: "var(--moss)" }} />
+          <InfoPopover label="Click for more info">Scores, industry &amp; supplier detection — live SSC API.</InfoPopover>
+        </span>
+        <span className="opp-legend-item">
+          <ResearchedIcon style={{ color: "var(--petrol)" }} />
+          <InfoPopover label="Click for more info">News &amp; decision-makers — researched, then cached.</InfoPopover>
+        </span>
+        <span className="opp-legend-item">
+          <SampleIcon style={{ color: "var(--slate)" }} />
+          <InfoPopover label="Click for more info">
+            Platform usage (logins, slots) — placeholder until the usage feed is connected.
+          </InfoPopover>
+        </span>
+        <label className="opp-concept-toggle" title="Show illustrative cards for triggers from the brief that aren't built yet">
           <input
             type="checkbox"
             checked={showConcepts}
@@ -186,18 +177,6 @@ export function OpportunityBoard() {
           />
           Show unbuilt triggers as concepts
         </label>
-        <span className="opp-legend-item">
-          <span className="opp-legend-swatch" style={{ background: "var(--moss)" }} />
-          SSC scores, industry &amp; supplier detection — live API
-        </span>
-        <span className="opp-legend-item">
-          <span className="opp-legend-swatch" style={{ background: "var(--petrol)" }} />
-          News &amp; decision-makers — researched, then cached
-        </span>
-        <span className="opp-legend-item">
-          <span className="opp-sample-tag">◇ Sample data</span>
-          Platform usage (logins, slots) — placeholder until the usage feed is connected
-        </span>
       </div>
 
       <main className="opp-lanes" aria-label="Opportunity feed">
@@ -214,23 +193,28 @@ export function OpportunityBoard() {
           return (
             <section key={g.key} className="opp-lane" data-group={g.key}>
               <div className="opp-lane-head">
-                <p className="opp-lane-name">
+                <div className="opp-lane-name">
                   <span className="opp-lane-swatch" aria-hidden="true" />
                   {g.label}{" "}
-                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 400, color: "var(--slate)", fontSize: "0.75rem" }}>
-                    ({items.length})
-                  </span>
-                </p>
-                <p className="opp-lane-blurb">{g.blurb}</p>
+                  <span className="opp-lane-count">({items.length})</span>
+                  <InfoPopover label={`What counts as ${g.label}`}>{g.blurb}</InfoPopover>
+                </div>
               </div>
               <div className="opp-lane-body">
                 {items.length === 0 ? (
                   <div className="opp-lane-empty">
-                    No open {g.label.toLowerCase()} right now{selectedAccountId ? " for this account" : ""}.
+                    No open {g.label.toLowerCase()} right now{selectedIds.size > 0 ? " for this selection" : ""}.
                   </div>
                 ) : (
                   items.map((c) => (
-                    <Ticket key={c.card_id} card={c} actioned={actioned.has(c.card_id)} onOpen={() => setOpenCardId(c.card_id)} />
+                    <Ticket
+                      key={c.card_id}
+                      card={c}
+                      domain={domainByCustomerId.get(c.customer_id) ?? ""}
+                      viewMode={viewMode}
+                      actioned={actioned.has(c.card_id)}
+                      onOpen={() => setOpenCardId(c.card_id)}
+                    />
                   ))
                 )}
               </div>
@@ -252,7 +236,22 @@ export function OpportunityBoard() {
   );
 }
 
-function Ticket({ card, actioned, onOpen }: { card: OpportunityCard; actioned: boolean; onOpen: () => void }) {
+function Ticket({
+  card,
+  domain,
+  viewMode,
+  actioned,
+  onOpen,
+}: {
+  card: OpportunityCard;
+  domain: string;
+  viewMode: ViewMode;
+  actioned: boolean;
+  onOpen: () => void;
+}) {
+  const showDetailInline = viewMode === "detailed" && card.detail;
+  const showDetailPopover = viewMode !== "detailed" && viewMode !== "compact" && card.detail;
+
   return (
     <article
       className="opp-ticket"
@@ -270,33 +269,45 @@ function Ticket({ card, actioned, onOpen }: { card: OpportunityCard; actioned: b
       }}
     >
       <div className="opp-ticket-top">
-        <span className="opp-ticket-account">{card.customer_name}</span>
-        <span className="opp-ticket-industry">{card.industry ? card.industry.replace(/_/g, " ") : ""}</span>
+        <span className="opp-ticket-account">
+          <CustomerLogo domain={domain} name={card.customer_name} size={16} />
+          {card.customer_name}
+        </span>
+        <span className="opp-ticket-source" onClick={(e) => e.stopPropagation()}>
+          {card.data_source === "sample" && (
+            <span title="Sample data — placeholder until the usage feed is connected">
+              <SampleIcon style={{ color: "var(--slate)" }} />
+            </span>
+          )}
+          {card.data_source === "concept" && (
+            <span
+              className="opp-concept-tag"
+              title={`Not built — concept${card.concept_trigger ? ` · ${card.concept_trigger}` : ""}`}
+            >
+              ⚑
+            </span>
+          )}
+        </span>
       </div>
-      {card.data_source === "sample" && (
-        <div style={{ marginTop: 6 }}>
-          <span className="opp-sample-tag" title="Built from placeholder platform-usage data, not a live feed">
-            ◇ Sample data
-          </span>
-        </div>
-      )}
-      {card.data_source === "concept" && (
-        <div style={{ marginTop: 6 }}>
-          <span className="opp-concept-tag" title="This trigger isn't built yet — illustrative only">
-            ⚑ Not built — concept
-          </span>
-          {card.concept_trigger && <div className="opp-concept-note">Trigger {card.concept_trigger}</div>}
-        </div>
-      )}
       {card.badge && <span className="opp-ticket-badge">{card.badge}</span>}
       <div className="opp-ticket-metric">
         <span className={`opp-metric-value sent-${card.sentiment}`}>{card.value}</span>
         <span className="opp-metric-sub">{card.label}</span>
       </div>
-      <p className="opp-ticket-desc">{card.description}</p>
+      <div className="opp-ticket-desc">
+        {card.description}
+        {showDetailPopover && (
+          <span className="opp-ticket-desc-info" onClick={(e) => e.stopPropagation()}>
+            <InfoPopover label="Click for more info" align="right">
+              {card.detail}
+            </InfoPopover>
+          </span>
+        )}
+      </div>
+      {showDetailInline && <p className="opp-ticket-detail">{card.detail}</p>}
       <div className="opp-ticket-foot">
         <time dateTime={card.detected_at}>{relTime(card.detected_at)}</time>
-        <span className="opp-ticket-cta">Draft email →</span>
+        <span className="opp-ticket-cta">Click to take action →</span>
       </div>
     </article>
   );

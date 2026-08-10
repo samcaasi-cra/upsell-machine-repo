@@ -172,6 +172,9 @@ class OpportunityCard(BaseModel):
     concept_trigger: Optional[str] = None
     badge: Optional[str] = None
     description: str
+    # Short (<=2 line) active-voice instruction shown on the card face. `detail` carries
+    # the fuller explanation, shown on demand (hover/click) rather than by default.
+    detail: Optional[str] = None
     detected_at: str
     recipient_name: str
     recipient_role: str
@@ -185,6 +188,7 @@ class OpportunityCard(BaseModel):
 class AccountChip(BaseModel):
     customer_id: str
     customer_name: str
+    domain: str
     industry: Optional[str] = None
     score: Optional[int] = None
     grade: Optional[str] = None

@@ -126,6 +126,7 @@ export interface OpportunityCard {
   concept_trigger: string | null;
   badge: string | null;
   description: string;
+  detail: string | null;
   detected_at: string;
   recipient_name: string;
   recipient_role: string;
@@ -142,6 +143,7 @@ export interface RecipientOption {
 export interface AccountChip {
   customer_id: string;
   customer_name: string;
+  domain: string;
   industry: string | null;
   score: number | null;
   grade: string | null;

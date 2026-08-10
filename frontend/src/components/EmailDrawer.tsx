@@ -115,6 +115,8 @@ export function EmailDrawer({
             <dd>{card.customer_name}</dd>
           </dl>
 
+          {card.detail && <p className="opp-drawer-detail">{card.detail}</p>}
+
           {card.data_source === "sample" && (
             <p style={{ margin: "0 0 10px" }}>
               <span className="opp-sample-tag">◇ Sample data</span>{" "}

@@ -71,8 +71,12 @@ def _pick_recipient(
     return "Primary Contact", "Primary Contact"
 
 
-def _card_id(customer_id: str, group: str, label: str, description: str) -> str:
-    raw = f"{customer_id}|{group}|{label}|{description}"
+def _card_id(customer_id: str, group: str, label: str, description: str, *extra: str) -> str:
+    # `description` is now a short, often-templated instruction shared across similar
+    # events (e.g. every "new stakeholder" card reads the same), so on its own it no
+    # longer guarantees a unique id -- callers pass distinguishing extras (detail text,
+    # recipient, detected_at) to keep multiple same-type cards for one customer distinct.
+    raw = "|".join([customer_id, group, label, description, *extra])
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
 
@@ -95,6 +99,7 @@ def _make_card(
     badge: Optional[str] = None,
     recipient: Optional[tuple[str, str]] = None,
     data_source: str = "live",
+    detail: Optional[str] = None,
 ) -> OpportunityCard:
     recipient_name, recipient_role = recipient or _pick_recipient(customer, decision_makers, group)
     first_name = recipient_name.split(" ")[0] if recipient_name != "Primary Contact" else "there"
@@ -114,7 +119,7 @@ def _make_card(
     signer = _signer(customer)
     body = f"Hello {first_name},\n\n{body_intro}\n\nKind regards,\n{signer}\nSecurityScorecard Customer Success"
     return OpportunityCard(
-        card_id=_card_id(customer.id, group, label, description),
+        card_id=_card_id(customer.id, group, label, description, detail or "", recipient_name, detected_at),
         group=group,
         customer_id=customer.id,
         customer_name=customer.name,
@@ -125,6 +130,7 @@ def _make_card(
         data_source=data_source,
         badge=badge,
         description=description,
+        detail=detail,
         detected_at=detected_at,
         recipient_name=recipient_name,
         recipient_role=recipient_role,
@@ -138,6 +144,7 @@ _NEWS_EVENT_META = {
     "acquisition": {
         "value": "M&A",
         "label": "acquisition",
+        "cta": "Congratulate them and offer to extend coverage to the acquisition.",
         "subject_prefix": "Congratulations on the news",
         "advice": (
             "Acquisitions often bring new suppliers and systems into scope before due diligence is "
@@ -148,6 +155,7 @@ _NEWS_EVENT_META = {
     "new_office": {
         "value": "NEW",
         "label": "new office",
+        "cta": "Congratulate them and offer to cover the new office's suppliers.",
         "subject_prefix": "Congratulations on the expansion",
         "advice": (
             "New regional operations typically bring local suppliers that aren't yet in scope — worth "
@@ -157,6 +165,7 @@ _NEWS_EVENT_META = {
     "product_launch": {
         "value": "NEW",
         "label": "product launch",
+        "cta": "Congratulate them and offer to map the new product's suppliers.",
         "subject_prefix": "Congratulations on the launch",
         "advice": (
             "New products usually bring a new supply chain with them — worth mapping the new product's "
@@ -207,14 +216,15 @@ def build_opportunity_cards(
             card(
                 "proof",
                 "#1",
-                f"in {industry_label}",
+                "vs peers",
                 "good",
-                f"A score of {score.current_score} is the highest currently tracked among "
-                f"{industry_label} peers{extra}.",
+                "Tell execs they now outrank every tracked peer on security.",
                 f"{customer.name} now holds the top score in {industry_label}",
                 f"At {score.current_score}, {customer.name} holds the highest SecurityScorecard rating we "
                 f"currently track in {industry_label}{extra}. That's a differentiator worth using externally "
                 "— consider featuring it on your customer-facing security page.",
+                detail=f"A score of {score.current_score} is the highest currently tracked among "
+                f"{industry_label} peers{extra}.",
             )
 
     score_up_delta, score_up_window = None, None
@@ -228,12 +238,13 @@ def build_opportunity_cards(
             f"+{score_up_delta}",
             f"SSC score → {score.current_score}",
             "good",
-            f"SSC score rose {score_up_delta} points in the last {score_up_window} — "
-            "strong renewal/ROI proof point.",
+            f"Cite the {score_up_delta}-point gain as renewal proof.",
             f"Your SecurityScorecard rating moved up {score_up_delta} points",
             f"{customer.name}'s SecurityScorecard rating rose {score_up_delta} points in the last "
             f"{score_up_window}, now at {score.current_score}. Worth a short call to document what drove "
             "the improvement ahead of your next audit cycle.",
+            detail=f"SSC score rose {score_up_delta} points in the last {score_up_window} — "
+            "strong renewal/ROI proof point.",
         )
 
     # --- Adoption signals ---
@@ -245,13 +256,14 @@ def build_opportunity_cards(
                 f"{pct}%",
                 "vendor slots used",
                 "watch",
-                f"{usage.slots_used} of {usage.licensed_slots} licensed vendor slots are now in use "
-                "— approaching the licensed ceiling.",
+                "Flag rising slot usage before it hits the licensed cap.",
                 f"{usage.slots_used} of {usage.licensed_slots} vendor slots now in use ({pct}%)",
                 f"{customer.name} is now using {usage.slots_used} of {usage.licensed_slots} licensed vendor "
                 f"slots ({pct}% utilisation). Worth a short conversation about headroom before you reach the "
                 "ceiling, so onboarding a new supplier is never delayed by a licence limit.",
                 data_source="sample",
+                detail=f"{usage.slots_used} of {usage.licensed_slots} licensed vendor slots are now in use "
+                "— approaching the licensed ceiling.",
             )
 
     total_visits = sum(i.visits_7d for i in usage.individuals)
@@ -264,14 +276,15 @@ def build_opportunity_cards(
             f"{multiplier}×",
             "logins per user",
             "good",
-            f"{total_visits} logins this week across {len(usage.individuals)} active users "
-            f"— {multiplier} per user, well above the platform benchmark.",
+            "Offer advanced views — usage is well above benchmark.",
             "Your team is using the platform well above benchmark",
             f"{customer.name} logged {total_visits} platform logins this week across {len(usage.individuals)} "
             f"active users — {multiplier} per user, well above our usage benchmark of "
             f"{_BENCHMARK_VISITS_PER_USER:g}. That level of engagement usually means the team is ready for "
             "more advanced views.",
             data_source="sample",
+            detail=f"{total_visits} logins this week across {len(usage.individuals)} active users "
+            f"— {multiplier} per user, well above the platform benchmark.",
         )
 
     for name in usage.new_individuals[:3]:
@@ -281,13 +294,14 @@ def build_opportunity_cards(
             "1st",
             f"login · {name}",
             "info",
-            f"{name} logged in to SecurityScorecard for the first time.",
+            f"Welcome {first} with a quick platform walkthrough.",
             f"Welcome to SecurityScorecard, {first}",
             f"You logged in to SecurityScorecard for the first time this week. Welcome aboard — you now have "
             f"visibility into {customer.name}'s own rating and its monitored data. Happy to walk you through "
             "the views that matter most for your role.",
             recipient=(name, "New user"),
             data_source="sample",
+            detail=f"{name} logged in to SecurityScorecard for the first time.",
         )
 
     # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no
@@ -308,13 +322,14 @@ def build_opportunity_cards(
             str(worst["score"]),
             "supplier at risk",
             "watch",
-            f"{vendor_name} ({worst.get('domain', 'unknown domain')}), a supplier detected in "
-            f"{customer.name}'s third-party footprint, is currently scoring {worst['score']} — in the "
-            "at-risk range.",
+            f"Warn them: {vendor_name} is showing elevated risk.",
             "A supplier in your third-party footprint is showing elevated risk",
             f"{vendor_name}, a supplier detected in {customer.name}'s third-party footprint, is currently "
             f"scoring {worst['score']} on SecurityScorecard — in the at-risk range. Worth flagging and "
             "reviewing exposure before a wider issue develops.",
+            detail=f"{vendor_name} ({worst.get('domain', 'unknown domain')}), a supplier detected in "
+            f"{customer.name}'s third-party footprint, is currently scoring {worst['score']} — in the "
+            "at-risk range.",
         )
 
     # --- Expansion: close peer breach anticipated (tracked customers only, anonymised --
@@ -329,27 +344,31 @@ def build_opportunity_cards(
                 str(peer_delta),
                 "peer score decline",
                 "watch",
-                f"A close peer in {industry_label} has seen its SSC score fall {abs(peer_delta)} points "
-                f"in the last {peer_window} — worth a proactive conversation about sector exposure.",
+                "Raise sector risk proactively — a close peer just declined.",
                 "Worth a proactive conversation about sector risk",
                 f"A close peer of yours in {industry_label} has seen a notable SSC score decline in the "
                 f"last {peer_window}. Without naming names, it's often a sign of sector-wide pressure — "
                 "worth a proactive conversation about your own supply-chain exposure in the space.",
+                detail=f"A close peer in {industry_label} has seen its SSC score fall {abs(peer_delta)} points "
+                f"in the last {peer_window} — worth a proactive conversation about sector exposure.",
             )
 
-    # --- Expansion events (from news research: acquisitions, new offices, product launches) ---
+    # --- News (from news research: acquisitions, new offices, product launches). Lives in
+    # the "News" lane (group="engagement"), not "Suppliers" -- these are company events, not
+    # detected vendor relationships. ---
     if news:
         for event in news.events[:5]:
             meta = _NEWS_EVENT_META[event.event_type]
             card(
-                "expansion",
+                "engagement",
                 meta["value"],
                 meta["label"],
                 "info",
-                event.summary,
+                meta["cta"],
                 f"{meta['subject_prefix']}: {event.headline}",
                 f"{event.summary} {meta['advice']}",
                 detected_at=event.date,
+                detail=event.summary,
             )
 
     if decision_makers and decision_makers.people:
@@ -363,17 +382,18 @@ def build_opportunity_cards(
         for p in new_ciso:
             role = "BISO" if "business information security" in p.title.lower() else "CISO"
             card(
-                "expansion",
+                "engagement",
                 "NEW",
                 f"{role} appointed",
                 "info",
-                f"{p.name} was appointed {p.title}.",
+                f"Welcome the new {role} with a scorecard handover briefing.",
                 f"Congratulations on your appointment as {role}",
                 f"Congratulations on your appointment as {role} at {customer.name}. Most incoming {role}s want "
                 "a fast, honest read on where things stand — happy to offer a short handover briefing on the "
                 "current scorecard and open risk items.",
                 detected_at=detected_at,
                 recipient=(p.name, p.title),
+                detail=f"{p.name} was appointed {p.title}.",
             )
 
         new_others = [p for p in decision_makers.people if p.status == "new" and not p.is_ciso_or_biso]
@@ -385,13 +405,14 @@ def build_opportunity_cards(
                     str(count),
                     "new stakeholders",
                     "good",
-                    f"{p.name} ({p.title}) newly identified in the decision-making unit — not yet engaged.",
+                    f"Introduce your team to {count} new stakeholder{'s' if count != 1 else ''}.",
                     "Introducing your SecurityScorecard account team",
                     f"You're one of {count} new stakeholders identified in {customer.name}'s security "
                     "decision-making unit. Happy to offer a brief introduction so you have a direct line to "
                     "us alongside the rest of your team.",
                     detected_at=detected_at,
                     recipient=(p.name, p.title),
+                    detail=f"{p.name} ({p.title}) newly identified in the decision-making unit — not yet engaged.",
                 )
 
         # --- Engagement: alumni joins another customer (cross-referenced against our own
@@ -415,14 +436,15 @@ def build_opportunity_cards(
                     "ALUMNI",
                     "familiar face",
                     "good",
-                    f"{p.name} ({p.title}) was previously tracked at {other_customers[0]} — now identified "
-                    f"at {customer.name}.",
+                    f"Reconnect — they know you from {other_customers[0]}.",
                     f"Great to reconnect via {other_customers[0]}",
                     f"Good to see a familiar face — you were previously part of the security team at "
                     f"{other_customers[0]}, and we're glad to have you at {customer.name} now. Happy to "
                     "pick up where we left off with a quick introduction to your new team's coverage.",
                     detected_at=detected_at,
                     recipient=(p.name, p.title),
+                    detail=f"{p.name} ({p.title}) was previously tracked at {other_customers[0]} — now identified "
+                    f"at {customer.name}.",
                 )
 
     return cards

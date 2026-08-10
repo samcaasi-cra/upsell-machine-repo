@@ -67,10 +67,11 @@ def build_concept_cards(
     quarter = rng.choice(["Q1 2027", "Q2 2027", "Q4 2026"])
     supplier = rng.choice(["Kestrel Freight", "Dunmore Systems", "Ashgrove Partners", "Halden Logistics"])
 
-    # (trigger, group, value, label, sentiment, description, subject, body_intro, needs, days_ago)
+    # (trigger, group, value, label, sentiment, description, detail, subject, body_intro, needs, days_ago)
     specs = [
         (
             "#9", "proof", f"£{saving // 1000}k", "avoided costs YTD", "good",
+            "Document this year's avoided costs ahead of renewal.",
             f"£{saving:,} in avoided remediation and audit costs this year, across {incidents} incidents "
             "caught before they escalated.",
             f"£{saving:,} in avoided costs this year",
@@ -81,6 +82,7 @@ def build_concept_cards(
         ),
         (
             "#14", "proof", f"{hr_before}→{hr_after}", "high-risk suppliers", "good",
+            "Review what worked and repeat it portfolio-wide.",
             f"High-risk suppliers in the monitored portfolio fell from {hr_before} to {hr_after} after the "
             "latest remediation push.",
             f"High-risk suppliers down from {hr_before} to {hr_after}",
@@ -91,6 +93,7 @@ def build_concept_cards(
         ),
         (
             "#15", "proof", f"+{pf_gain}", f"portfolio avg → {pf_before + pf_gain}", "good",
+            "Cite the portfolio gain in your next board update.",
             f"Supplier portfolio average rose from {pf_before} to {pf_before + pf_gain} this quarter.",
             f"Your supplier portfolio average climbed {pf_gain} points",
             f"{customer.name}'s monitored supplier portfolio average rose from {pf_before} to "
@@ -99,6 +102,7 @@ def build_concept_cards(
         ),
         (
             "#8", "proof", f"{lead_days}d", "ahead of disclosure", "good",
+            f"Cite the {lead_days}-day early warning next board review.",
             f"{supplier} was flagged high-risk {lead_days} days before its breach was publicly disclosed.",
             f"We flagged {supplier} {lead_days} days before disclosure",
             f"SecurityScorecard flagged {supplier} as high-risk {lead_days} days before the breach became "
@@ -108,6 +112,7 @@ def build_concept_cards(
         ),
         (
             "#4", "expansion", "REG", "new industry rule", "info",
+            "Run a supplier gap check ahead of the new rule.",
             f"A finalised third-party risk rule for {industry_label} takes effect {quarter}.",
             f"New third-party risk rule affecting {industry_label.title()}",
             f"A third-party risk rule affecting {industry_label} was finalised recently and takes effect "
@@ -116,7 +121,8 @@ def build_concept_cards(
             "A regulatory tracking feed", 3,
         ),
         (
-            "#16", "expansion", f"+{share_pct}%", "share price vs peers", "info",
+            "#16", "expansion", f"+{share_pct}%", "vs peers", "info",
+            "Revisit deferred coverage — budget headroom looks likely.",
             f"Share price is up {share_pct}% against {industry_label} peers this quarter — often a sign of "
             "budget headroom.",
             "Congratulations on a strong quarter",
@@ -126,6 +132,7 @@ def build_concept_cards(
         ),
         (
             "#18", "engagement", "★", "forum compliment", "good",
+            "Thank them and float a reference conversation.",
             f"A {customer.name} user posted positive feedback about the platform in the Customer Forum.",
             "Thank you for the kind words",
             f"Someone from {customer.name} left positive feedback in the Customer Forum. Worth thanking "
@@ -134,6 +141,7 @@ def build_concept_cards(
         ),
         (
             "#20", "engagement", "POST", "DMU posted on cyber", "info",
+            "Comment on their post — easy, timely touch.",
             f"{recipient_name} posted publicly about third-party risk this week.",
             "Enjoyed your post on third-party risk",
             f"Saw your recent post on third-party risk — it lines up closely with what we're seeing across "
@@ -142,6 +150,7 @@ def build_concept_cards(
         ),
         (
             "#23", "engagement", f"{review_days}d", "until CSM review", "info",
+            "Confirm attendees for the upcoming review.",
             f"Quarterly CSM review due in {review_days} days"
             + (f", owned by {customer.csm}." if customer.csm else " — no CSM assigned yet."),
             f"Confirming our upcoming review",
@@ -161,7 +170,7 @@ def build_concept_cards(
     selected = [specs[roster_index % len(specs)]] if roster_size > 1 else specs
 
     cards: list[OpportunityCard] = []
-    for trigger, group, value, label, sentiment, description, subject, body_intro, needs, days_ago in selected:
+    for trigger, group, value, label, sentiment, description, detail, subject, body_intro, needs, days_ago in selected:
         cards.append(
             OpportunityCard(
                 card_id=_card_id(customer.id, trigger),
@@ -175,6 +184,7 @@ def build_concept_cards(
                 data_source="concept",
                 concept_trigger=f"{trigger} · needs {needs}",
                 description=description,
+                detail=detail,
                 detected_at=(today - timedelta(days=days_ago)).isoformat(),
                 recipient_name=recipient_name,
                 recipient_role=recipient_role,
