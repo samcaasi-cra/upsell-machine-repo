@@ -1,18 +1,45 @@
 # Upsell Machine — what's built
 
 Project 5: Customer Upsell, Retention & Decision-Making Automation.
-Internal CSM-facing dashboard. Last updated: 9 August 2026.
+Built for the SSC Hackathon theme *Agentic, API-First: Reimagine a Core Workflow*.
+Last updated: 10 August 2026.
 
 ---
 
 ## The app in one paragraph
 
-A two-tab dashboard. **Opportunities** is the CSM's daily working view: a categorised
-board of engagement signals per customer, each card carrying a drafted email you can
-edit and send. **Customers** is the drill-down: per-account SSC score history, platform
-usage, tracked decision-makers, and tracked news. Signals come from live
-SecurityScorecard data, automated web research, and (for platform usage only)
-placeholder data pending a real feed.
+An **agent** that reviews a SecurityScorecard portfolio and tells a CSM what to do
+today. It reaches them three ways: **Today** hands back three ranked actions with the
+outreach already drafted; **Ask** answers questions about the portfolio in plain
+English; and an **MCP server** exposes the same tools to any MCP client, so a CSM can
+work from Claude Desktop with no interface of ours involved. Two supporting views
+remain for inspection and override — an **Opportunities** board of every signal, and a
+**Customers** drill-down per account. Everything is built on SSC APIs; none of it uses
+an existing SSC frontend.
+
+### Why it isn't a dashboard
+
+The brief warns against building another dashboard, and it's right to. A board of 38
+signals across 13 accounts makes the CSM the reasoning engine — they scan, filter,
+prioritise and decide.
+
+**Today** inverts that. The agent surveys every account, drills into the ones that
+matter, and returns three things to do in order, each with the email written. The CSM
+approves or skips. The board still exists, because someone will always want to see
+everything — but it's the fallback, not the front door.
+
+---
+
+## The three entry points
+
+| Entry point | What it is | Why it exists |
+|---|---|---|
+| **Today** | Agent-produced worklist: 3 ranked actions, reasons, drafted emails. Cached daily | The default. A decision, not a data dump |
+| **Ask** | Conversational agent over live data, showing which tools it chose and tokens used | Ad-hoc questions a fixed view can't anticipate |
+| **MCP server** | The same tools over Model Context Protocol | Works with no frontend at all — see [MCP.md](MCP.md) |
+
+All three share one tool layer (`app/services/agent_tools.py`), so they cannot drift
+apart.
 
 ---
 
@@ -25,8 +52,9 @@ The UI labels this everywhere, but to be explicit:
 | SSC scores, grades, industry, score history | SecurityScorecard API | **Live** |
 | Third-party supplier detection + their scores | SecurityScorecard API | **Live** |
 | Customer roster | `backend/data/customers.json` + SSC portfolio sync | **Live** |
-| News events (acquisitions, offices, launches) | Google News RSS + web scrape → OpenAI extraction | **Live, cached** |
+| News events (acquisitions, offices, launches) | Google News RSS → OpenAI extraction | **Live, cached** |
 | Decision-makers / job titles | Research prompt run in Claude, pasted back | **Live, cached** |
+| Agent reasoning (Today, Ask) | Live tool calls over the above | **Live** |
 | Platform usage (logins, slots, reports) | Deterministic placeholder generator | **Sample** — marked `◇ Sample data` |
 | Sponsor / CSM assignment | Seed data | **Sample** — no CRM connected |
 
@@ -100,6 +128,20 @@ showing what it would surface once the data source exists.
 
 ## Features
 
+**Today** (landing screen)
+- Agent surveys every account, drills into what matters, returns 3 ranked actions
+- Each carries the reason, the concrete next step, and a drafted email
+- Cached per calendar day; "Refresh" forces a rebuild
+- Shows token cost and that identities were masked
+
+**Ask** (conversational agent)
+- Natural-language questions over live portfolio data
+- Displays which tools the agent chose to call, and the tokens each answer cost
+- Suggested questions to start from
+
+**MCP server** — the same tools over Model Context Protocol, so any MCP client can
+drive the workflow with no frontend of ours. See [MCP.md](MCP.md).
+
 **Opportunities board**
 - Four lanes: Proof of Value, Adoption Signals, Expansion Events, Engagement Prompts
 - Account chips with live SSC grade + score, filter the board by account
@@ -118,8 +160,7 @@ showing what it would surface once the data source exists.
 
 **Research**
 - *Automated*: news research runs daily across all customers, and on demand per
-  customer. Google News RSS primary, DuckDuckGo scrape for article text, OpenAI
-  extracts structured JSON.
+  customer. Google News RSS → OpenAI extracts structured JSON.
 - *Manual*: generates a copy/paste prompt you run in Claude, then paste the JSON back.
   This is the better path for decision-makers — public search rarely names a company's
   security leadership, and the prompt refuses to invent people.
@@ -159,23 +200,69 @@ cd backend
 `restore --fresh` restores the customer roster but clears the research caches — use it
 to demo research populating from empty. Only touches `backend/data/`; never credentials.
 
-### Suggested walkthrough
+### Suggested walkthrough (3–5 minutes)
 
-1. **Opportunities board** — lead here. Point out the provenance legend, then the account
-   chips (live SSC grades) and the four lanes.
-2. **Open a card** → drafted email with the right recipient resolved from real research.
-   Change the recipient in the dropdown, show the greeting re-point, edit the body,
-   reset to default.
-3. **Point at a `◇ Sample data` card** — say plainly which parts are placeholder and why
-   they're labelled.
-4. **Customers tab** → a customer detail: live SSC score chart, then the News panel
-   showing automatically-researched events.
-5. **Back to the board, tick "Show unbuilt triggers as concepts"** — the board becomes
-   the full 23-trigger vision. Each concept card names the trigger and the exact data
-   source it's waiting on, which turns "what's missing" into a concrete shopping list.
-6. **Close on the architecture point**: every gap is a connection, not a rebuild — news
-   already made exactly that transition from manual to automated with no prompt or
-   parser changes.
+Lead with the agent. The board is supporting evidence, not the story.
+
+1. **Today** — open on it. *"The agent reviewed all 13 accounts and picked 3 worth your
+   time."* Read the top one aloud: the reason cites real numbers. Expand the draft
+   email. Point at the footer — **N tool calls, ~5k tokens, once a day**.
+2. **Ask** — type *"who has supplier risk I should know about?"*. Point at the tool
+   chips as they appear: **it chose `list_customers`, then drilled into two accounts.**
+   That's the agent deciding, not a fixed query.
+3. **Say the privacy line** — *"the model never saw a customer name. It saw CUST_A with
+   a score. We tested that no identifier leaks, including inside free text."*
+4. **Opportunities** — *"and if you want everything, it's here"* — legend, lanes, a
+   `◇ Sample data` card called out honestly.
+5. **Tick "Show unbuilt triggers as concepts"** — the full 23-trigger vision, each card
+   naming the data source it's waiting on. Turns "what's missing" into a shopping list.
+6. **Close on architecture**: every gap is a connection, not a rebuild — news already
+   made exactly that transition from manual to automated with no prompt or parser
+   change. And mention **MCP**: the same tools work with no frontend at all.
+
+**If asked "what's actually agentic here?"** — the agent chooses which accounts to
+examine. It surveys 13 cheaply, then fetches detail on 3. Nobody wrote that rule; it
+decides per question, and you can watch it decide in the Ask tab.
+
+---
+
+## Data protection: identities never reach the model
+
+The hackathon rules say *"do not send sensitive customer data to third parties."* We
+took that seriously enough to design around it rather than hope nobody asked.
+
+**The insight:** a score alone isn't sensitive — "some company scored 91" tells you
+nothing. A company name alone isn't especially sensitive either. What's sensitive is
+the two **joined together**: *"Stripe is at risk."*
+
+So we break the link, not the data:
+
+| Field | Sent to the model as | Why |
+|---|---|---|
+| Customer name, domain | `CUST_A` | The sensitive half |
+| Person names | `PERSON_1` (role kept) | Personal data; the role is what a CSM needs |
+| Score, grade, deltas, dates | **Unchanged** | The agent must rank and compare these |
+
+Real names are restored before anything reaches the screen. The agent reasons exactly
+as well, because thresholds and rankings don't care what something is called.
+
+**Verified, not assumed.** We captured the actual outbound payload — 9,242 characters —
+and asserted that none of the 28 known customer names, domains or person names appear
+anywhere in it, including inside free-text fields like signal reasons and news
+headlines. That test caught a real leak path: `"New decision-maker identified: Marco
+Silva"` now reads `"...identified: PERSON_2 (Head of Third Party Risk)"` — name gone,
+role intact.
+
+**Two honest limits:**
+- This is pseudonymisation, not anonymisation. Under GDPR the result is still personal
+  data, and in a 13-customer portfolio context can re-identify.
+- **Research can't be masked** — you can't search the news for "CUST_A", the real name
+  *is* the query. But that path sends only a company name and public web content, with
+  no scores or signals attached. Roughly what a search engine already sees.
+
+We also removed the DuckDuckGo scraper: it relied on `cloudscraper`, which exists to
+defeat bot detection, and it had stopped working under rate limiting. Google News RSS
+is a legitimate feed and turned out to be sufficient alone.
 
 ---
 
@@ -217,10 +304,11 @@ Stated plainly, because they matter for judging what's demo-ready vs production-
   engineering effort.
 
 **Research**
-- **DuckDuckGo rate-limits** after modest use. News degrades rather than breaks because
-  Google News RSS carries it, but the article-text half goes quiet.
 - **Decision-maker auto-research returns almost nobody** — retrieval limitation, not a
   prompt or model problem. Detailed below.
+- **News research is headline-only.** We removed the article-body scraper (it relied on
+  an anti-bot bypass and had stopped working), so extraction works from Google News
+  headlines, dates and publishers rather than full text.
 - **Research quality is only as good as public reporting.** Small or private companies
   produce thin results.
 
@@ -267,6 +355,73 @@ At ~13 customers × 3 queries daily we'd use ~1,170 queries/month — at the cei
 recurring free tiers with no headroom for growth or on-demand runs, on throttled
 no-SLA plans. Given people change roles only a few times a year, manual research is
 both cheaper and better here. Revisit if the roster grows or the budget appears.
+
+---
+
+## Why we're blocked on the rest — for the team
+
+Every unbuilt trigger is blocked on **access to data**, not on engineering time. Worth
+being precise about which, because they're not all the same kind of blocked.
+
+**1. No access to the data source** — the biggest group.
+Platform usage (logins, slots, reports) has no API we can reach, so triggers 1, 3, 10
+and 21 run on placeholder numbers. Per-customer supplier portfolios aren't configured
+in SSC, blocking 14 and 15. There's no breach-event feed for 8. Share price (16) needs
+a paid market-data API. Customer Forum (18) is a tool we have no access to.
+*These are procurement or configuration questions, not coding ones.*
+
+**2. Blocked on an organisational answer.**
+Trigger 23 needs Salesforce. We don't currently know whether Cyber Rescue uses
+Salesforce at all — worth confirming before anyone builds against it. The same
+integration would replace our placeholder sponsor/CSM data.
+
+**3. Blocked on a technical limit we measured.**
+Automated decision-maker research (17) returns almost nobody, and we proved why rather
+than guessing: fetching a public LinkedIn profile server-side returns **0 characters**
+(login wall), and DuckDuckGo rate-limits after modest use. Meanwhile news headlines
+don't name a company's CISO. The same prompt works when a person runs it in Claude,
+because Claude's web search reaches indexed LinkedIn snippets that no server-side
+scrape can. **This is a retrieval limitation, not a prompt or model problem** — which
+is why that one path stays manual and is genuinely better for it.
+
+**4. Not a blocker, an unknown.**
+The brief names the **Titan API** as the primary target and PV1 as a fallback. We built
+entirely on PV1 (`api.securityscorecard.io`) because we have no Titan documentation or
+access. If Titan covers scores, score history and vendor detection, swapping is
+contained work — every SSC call already routes through one module, `ssc_client.py`.
+**Worth asking at kick-off.**
+
+### What this means for the pitch
+
+The honest framing is that we're **not blocked on ideas or implementation**. Each gap
+has a working card in the UI showing exactly what it would surface, and names the data
+source it's waiting for. That turns "what's missing" into a shopping list rather than
+an apology.
+
+---
+
+## Does it fit the judging criteria?
+
+An honest self-assessment, including where we're weak.
+
+| Criterion | Where we stand | Read |
+|---|---|---|
+| **Fits theme** — genuinely agentic and API-first? | **Agentic:** a real tool-calling agent that decides what to examine, exposed three ways including MCP. **API-first:** everything from SSC APIs, our own frontend, and via MCP no frontend at all. **Reimagined:** Today turns 38 signals into 3 decisions. *Weak spot: we're on PV1, not Titan* | Strong |
+| **Practicality** | Real CSM problem from the actual project brief, live SSC data, honest labelling of what's placeholder | Strong |
+| **Business potential** | Directly ARR-linked. Deployment config, auth and a documented POC→production path already exist | Strong |
+| **Token efficiency** | ~4.4k tokens per Ask query, ~5.2k for a daily briefing, on a low-cost model. Tools return the smallest useful shape so the agent surveys cheaply and drills selectively. Token count is visible in the UI | **Probably our strongest, and most teams will ignore this criterion** |
+| **Wow factor** | Three entry points, live data, visible agent reasoning, editable drafted emails, honest provenance | Good |
+
+**Where we're genuinely weak:**
+- **Not using Titan**, which the brief calls the primary target.
+- **Platform usage is placeholder**, and four triggers depend on it.
+- **9 of 23 triggers unbuilt** — all data-blocked, but still unbuilt.
+- **No automated tests.** Verification has been manual against live data.
+
+**The strongest single claim we can make:** the agent decides which accounts to
+examine, does it in ~5k tokens on a cheap model, and never sends a customer's identity
+joined to their security posture to a third party — and we tested that rather than
+assuming it.
 
 ---
 

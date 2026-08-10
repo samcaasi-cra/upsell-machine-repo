@@ -1,12 +1,20 @@
 # Upsell Machine — Project 5
 
-Internal CSM dashboard for Cyber Rescue's *Customer Upsell, Retention &
-Decision-Making Automation* project. Surfaces per-customer engagement signals — SSC
-score movement, platform usage, decision-maker changes, company news — and drafts an
-email for each one.
+An **agent** that reviews a SecurityScorecard portfolio and tells a CSM what to do
+today — built on SSC APIs, with no SSC frontend involved.
+
+It reaches you three ways:
+
+- **Today** — three ranked actions with the outreach already drafted
+- **Ask** — questions about the portfolio in plain English
+- **MCP server** — the same tools in any MCP client, no interface of ours needed
+
+Plus an **Opportunities** board of every signal and a **Customers** drill-down, for
+when you want to inspect or override.
 
 - **[IMPLEMENTED.md](IMPLEMENTED.md)** — what's built, trigger coverage, data
-  provenance, limitations. Start here if you're reviewing the project.
+  provenance, limitations, criteria self-assessment. Start here if you're reviewing.
+- **[MCP.md](MCP.md)** — connecting Claude Desktop to the tools.
 - **[DEPLOY.md](DEPLOY.md)** — putting it on a URL for the team.
 
 ---
@@ -83,14 +91,27 @@ http://localhost:8000/docs.
 
 ## Using it
 
-**Opportunities** — the main working view. Four lanes of signals across all customers.
-Click any card for a drafted email you can edit, re-address, and copy. Account chips
-filter the board. Tick *"Show unbuilt triggers as concepts"* to see illustrative cards
-for the triggers that aren't built yet.
+**Today** — the landing screen. The agent reviews every account, drills into the ones
+that matter, and gives you three ranked actions with the outreach already drafted.
+Cached per day; *Refresh* rebuilds it.
+
+**Ask** — questions in plain English: *"which accounts should I prioritise this week?"*
+The tool chips show which data the agent chose to fetch, and each answer reports its
+token cost.
+
+**Opportunities** — every signal, four lanes, with account-chip filtering. Click a card
+for an editable drafted email with a recipient dropdown. Tick *"Show unbuilt triggers
+as concepts"* for illustrative cards covering the triggers that aren't built yet.
 
 **Customers** — per-account detail: SSC score chart, usage breakdown, tracked
 decision-makers, tracked news. "Add customer" adds one by hand; "Sync from portfolio"
 imports anything added directly in the SecurityScorecard UI.
+
+**MCP** — connect Claude Desktop to the same tools and skip the UI entirely.
+See [MCP.md](MCP.md).
+
+Both agent features need `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`). Without one, Today
+and Ask explain what's missing and the other views work normally.
 
 **Research** — two ways to populate decision-makers and news:
 - *Auto-research* (needs `OPENAI_API_KEY`) — searches and extracts automatically. Works
