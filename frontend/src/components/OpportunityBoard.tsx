@@ -274,6 +274,16 @@ function Ticket({
           {card.customer_name}
         </span>
         <span className="opp-ticket-source" onClick={(e) => e.stopPropagation()}>
+          {card.data_source === "live" && (
+            <span title="Live — read directly from the SecurityScorecard API">
+              <LiveIcon style={{ color: "var(--moss)" }} />
+            </span>
+          )}
+          {card.data_source === "researched" && (
+            <span title="Researched — assembled from public sources, then cached">
+              <ResearchedIcon style={{ color: "var(--petrol)" }} />
+            </span>
+          )}
           {card.data_source === "sample" && (
             <span title="Sample data — placeholder until the usage feed is connected">
               <SampleIcon style={{ color: "var(--slate)" }} />

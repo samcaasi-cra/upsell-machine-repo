@@ -150,7 +150,10 @@ Sentiment = Literal["good", "watch", "info"]
 # "sample"  = real trigger logic, placeholder input data (the usage generator)
 # "concept" = the trigger isn't built; an illustration of what it would surface once
 #             the underlying data source exists. Hidden unless explicitly requested.
-DataSource = Literal["live", "sample", "concept"]
+# "live" is a direct SSC API read. "researched" is also real, but assembled by us from
+# public sources (news search, decision-maker research) rather than returned by an API,
+# so it carries more uncertainty and is worth distinguishing on the card.
+DataSource = Literal["live", "researched", "sample", "concept"]
 
 
 class RecipientOption(BaseModel):

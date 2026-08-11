@@ -434,6 +434,7 @@ def build_opportunity_cards(
                 detected_at=event.date,
                 detail=event.summary,
                 source_url=event.source_url,
+                data_source="researched",
             )
 
     if decision_makers and decision_makers.people:
@@ -459,6 +460,7 @@ def build_opportunity_cards(
                 detected_at=detected_at,
                 recipient=(p.name, p.title),
                 detail=f"{p.name} was appointed {p.title}.",
+                data_source="researched",
             )
 
         new_others = [p for p in decision_makers.people if p.status == "new" and not p.is_ciso_or_biso]
@@ -478,6 +480,7 @@ def build_opportunity_cards(
                     detected_at=detected_at,
                     recipient=(p.name, p.title),
                     detail=f"{p.name} ({p.title}) newly identified in the decision-making unit — not yet engaged.",
+                    data_source="researched",
                 )
 
         # --- Engagement: alumni joins another customer (cross-referenced against our own
@@ -510,6 +513,7 @@ def build_opportunity_cards(
                     recipient=(p.name, p.title),
                     detail=f"{p.name} ({p.title}) was previously tracked at {other_customers[0]} — now identified "
                     f"at {customer.name}.",
+                    data_source="researched",
                 )
 
     return cards
