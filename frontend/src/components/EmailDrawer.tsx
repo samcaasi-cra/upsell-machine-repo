@@ -139,6 +139,7 @@ export function EmailDrawer({
               <span style={{ fontSize: "0.72rem", color: "var(--slate)" }}>
                 Illustrative only. Every number here is invented.
                 {card.concept_trigger ? ` Trigger ${card.concept_trigger}.` : ""}
+                {card.source_detail ? ` ${card.source_detail}` : ""}
               </span>
             </p>
           )}

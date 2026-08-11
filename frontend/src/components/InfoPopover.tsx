@@ -6,10 +6,13 @@ import { InfoIcon } from "./icons";
 export function InfoPopover({
   label = "Click for more info",
   align = "left",
+  icon,
   children,
 }: {
   label?: string;
   align?: "left" | "right";
+  /** Override the default "ⓘ" trigger, e.g. with a colored data-source icon. */
+  icon?: ReactNode;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -44,7 +47,7 @@ export function InfoPopover({
           setOpen((v) => !v);
         }}
       >
-        <InfoIcon />
+        {icon ?? <InfoIcon />}
       </button>
       {open && (
         <div className={`info-pop-panel info-pop-panel-${align}`} role="tooltip" onClick={(e) => e.stopPropagation()}>

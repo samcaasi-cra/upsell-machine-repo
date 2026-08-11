@@ -157,6 +157,7 @@ def _make_card(
     data_source: str = "live",
     detail: Optional[str] = None,
     source_url: Optional[str] = None,
+    source_detail: Optional[str] = None,
 ) -> OpportunityCard:
     recipient_name, recipient_role = recipient or _pick_recipient(customer, decision_makers, group)
     first_name = recipient_name.split(" ")[0] if recipient_name != "Primary Contact" else "there"
@@ -201,6 +202,7 @@ def _make_card(
         subject=subject,
         body=body,
         source_url=source_url,
+        source_detail=source_detail,
     )
 
 
@@ -289,6 +291,10 @@ def build_opportunity_cards(
                 "— consider featuring it on your customer-facing security page.",
                 detail=f"A score of {score.current_score} is the highest currently tracked among "
                 f"{industry_label} peers{extra}.",
+                source_detail="SecurityScorecard API — GET /companies/{domain} for the current score, "
+                "compared across every tracked customer sharing this industry field. "
+                "backend/app/services/ssc_client.py:106 (get_company()); "
+                "backend/app/services/signals.py:13 (industry_stats()).",
             )
 
     score_up_delta, score_up_window = None, None
@@ -309,6 +315,9 @@ def build_opportunity_cards(
             "the improvement ahead of your next audit cycle.",
             detail=f"SSC score rose {score_up_delta} points in the last {score_up_window} — "
             "strong renewal/ROI proof point.",
+            source_detail="SecurityScorecard API — GET /companies/{domain}/history/score, timing=weekly, "
+            "feeding the ±5pt/30d and ±10pt/182d thresholds. "
+            "backend/app/services/ssc_client.py:127-209 (get_score_history(), build_score_summary()).",
         )
 
     # --- Adoption signals ---
@@ -328,6 +337,8 @@ def build_opportunity_cards(
                 data_source="sample",
                 detail=f"{usage.slots_used} of {usage.licensed_slots} licensed vendor slots are now in use "
                 "— approaching the licensed ceiling.",
+                source_detail="Deterministic placeholder generator, seeded per customer per day — no real "
+                "usage feed exists yet. backend/app/services/mock_usage.py:18 (build_usage_summary()).",
             )
 
     total_visits = sum(i.visits_7d for i in usage.individuals)
@@ -349,6 +360,8 @@ def build_opportunity_cards(
             data_source="sample",
             detail=f"{total_visits} logins this week across {len(usage.individuals)} active users "
             f"— {multiplier} per user, well above the platform benchmark.",
+            source_detail="Deterministic placeholder generator, seeded per customer per day — no real "
+            "usage feed exists yet. backend/app/services/mock_usage.py:18 (build_usage_summary()).",
         )
 
     for name in usage.new_individuals[:3]:
@@ -366,6 +379,9 @@ def build_opportunity_cards(
             recipient=(name, "New user"),
             data_source="sample",
             detail=f"{name} logged in to SecurityScorecard for the first time.",
+            source_detail="Deterministic placeholder generator, compared against the per-customer "
+            "seen-individuals cache. backend/app/services/mock_usage.py:18 (build_usage_summary()); "
+            f"backend/data/usage_individuals/{customer.id}.json.",
         )
 
     # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no
@@ -394,6 +410,10 @@ def build_opportunity_cards(
             detail=f"{vendor_name} ({worst.get('domain', 'unknown domain')}), a supplier detected in "
             f"{customer.name}'s third-party footprint, is currently scoring {worst['score']} — in the "
             "at-risk range.",
+            source_detail="SecurityScorecard API — GET /vendor-detection/{domain}/third-party, limit=50, "
+            "filtered against a denylist of infrastructure/OSS false-positives. "
+            "backend/app/services/ssc_client.py:111-124 (get_third_party_vendors()); "
+            "backend/app/services/opportunities.py (_NOT_REAL_VENDORS filter).",
         )
 
     # --- Expansion: close peer breach anticipated (tracked customers only, anonymised --
@@ -415,11 +435,15 @@ def build_opportunity_cards(
                 "worth a proactive conversation about your own supply-chain exposure in the space.",
                 detail=f"A close peer in {industry_label} has seen its SSC score fall {abs(peer_delta)} points "
                 f"in the last {peer_window} — worth a proactive conversation about sector exposure.",
+                source_detail="SecurityScorecard score history (GET /companies/{domain}/history/score) "
+                "compared across other tracked customers sharing this industry field — the peer is never "
+                "named. backend/app/routers/opportunities.py:13 (_build_industry_declines()).",
             )
 
     # --- News (from news research: acquisitions, new offices, product launches). Lives in
-    # the "News" lane (group="engagement"), not "Suppliers" -- these are company events, not
-    # detected vendor relationships. ---
+    # the "Growing attack surface" lane (group="engagement") -- each of these expands the
+    # customer's own footprint (a new entity, office, or product), not a detected vendor
+    # relationship, so it's kept separate from "Monitoring Opportunities". ---
     if news:
         for event in _dedupe_news_events(news.events, customer.name)[:5]:
             meta = _NEWS_EVENT_META[event.event_type]
@@ -435,6 +459,9 @@ def build_opportunity_cards(
                 detail=event.summary,
                 source_url=event.source_url,
                 data_source="researched",
+                source_detail="Google News RSS search, extracted into structured events by OpenAI "
+                "(gpt-4o-mini). backend/app/services/web_research.py; cached at "
+                f"backend/data/news_events/{customer.domain}.json.",
             )
 
     if decision_makers and decision_makers.people:
@@ -444,11 +471,14 @@ def build_opportunity_cards(
         except ValueError:
             detected_at = today_iso
 
+        # New decision-makers live in the "Monitoring Opportunities" lane (group="expansion")
+        # -- each is an opportunity to bring a new person into engagement/monitoring, same
+        # family as the supplier- and peer-risk cards above.
         new_ciso = [p for p in decision_makers.people if p.status == "new" and p.is_ciso_or_biso]
         for p in new_ciso:
             role = "BISO" if "business information security" in p.title.lower() else "CISO"
             card(
-                "engagement",
+                "expansion",
                 "NEW",
                 f"{role} appointed",
                 "info",
@@ -461,6 +491,9 @@ def build_opportunity_cards(
                 recipient=(p.name, p.title),
                 detail=f"{p.name} was appointed {p.title}.",
                 data_source="researched",
+                source_detail="Research prompt run in Claude, pasted back and parsed server-side. "
+                "backend/app/services/decision_maker_prompt.py; backend/app/routers/decision_makers.py "
+                f"(import endpoint); cached at backend/data/decision_makers/{customer.domain}.json.",
             )
 
         new_others = [p for p in decision_makers.people if p.status == "new" and not p.is_ciso_or_biso]
@@ -468,7 +501,7 @@ def build_opportunity_cards(
             count = len(new_others)
             for p in new_others:
                 card(
-                    "engagement",
+                    "expansion",
                     str(count),
                     "new stakeholders",
                     "good",
@@ -481,10 +514,14 @@ def build_opportunity_cards(
                     recipient=(p.name, p.title),
                     detail=f"{p.name} ({p.title}) newly identified in the decision-making unit — not yet engaged.",
                     data_source="researched",
+                    source_detail="Research prompt run in Claude, pasted back and parsed server-side. "
+                    "backend/app/services/decision_maker_prompt.py; backend/app/routers/decision_makers.py "
+                    f"(import endpoint); cached at backend/data/decision_makers/{customer.domain}.json.",
                 )
 
-        # --- Engagement: alumni joins another customer (cross-referenced against our own
-        # accumulated decision-maker research, no LinkedIn Sales Navigator needed) ---
+        # --- Alumni joins another customer (cross-referenced against our own accumulated
+        # decision-maker research, no LinkedIn Sales Navigator needed) -- also a "Monitoring
+        # Opportunities" card, since it's a new point of contact to bring into engagement. ---
         if person_customer_map:
             for p in decision_makers.people:
                 if p.status != "new":
@@ -500,7 +537,7 @@ def build_opportunity_cards(
                 if not other_customers:
                     continue
                 card(
-                    "engagement",
+                    "expansion",
                     "ALUMNI",
                     "familiar face",
                     "good",
@@ -513,6 +550,9 @@ def build_opportunity_cards(
                     recipient=(p.name, p.title),
                     detail=f"{p.name} ({p.title}) was previously tracked at {other_customers[0]} — now identified "
                     f"at {customer.name}.",
+                    source_detail="Matches a newly-identified person's name (or LinkedIn URL) against every "
+                    "other tracked customer's cached decision-maker list. "
+                    "backend/app/services/opportunities.py (person_customer_map diff, alumni block).",
                     data_source="researched",
                 )
 

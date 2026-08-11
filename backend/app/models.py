@@ -181,6 +181,10 @@ class OpportunityCard(BaseModel):
     # The article this card came from, for news-driven cards. Resolves in a browser
     # (it's a Google News redirect), and is appended to the drafted email.
     source_url: Optional[str] = None
+    # Exact provenance: the named source plus the precise call/file/line behind it (or,
+    # for data_source="concept", the source that would need to be connected to make the
+    # trigger real). Shown on demand via the card's data-source icon.
+    source_detail: Optional[str] = None
     detected_at: str
     recipient_name: str
     recipient_role: str

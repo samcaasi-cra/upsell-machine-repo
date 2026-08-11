@@ -128,6 +128,7 @@ export interface OpportunityCard {
   description: string;
   detail: string | null;
   source_url: string | null;
+  source_detail: string | null;
   detected_at: string;
   recipient_name: string;
   recipient_role: string;

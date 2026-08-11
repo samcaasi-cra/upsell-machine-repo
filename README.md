@@ -8,8 +8,10 @@ grouped into four lanes —
 
 - **Own Cyber Posture** — evidence the customer's own security is already paying off
 - **Usage** — platform usage telling you the account is ready for more
-- **Suppliers** — third-party and sector risk detected outside the customer's own score
-- **News** — company news and people moments worth a direct, timely touch
+- **Monitoring Opportunities** — third-party and sector risk, plus new people worth bringing
+  into monitoring or engagement
+- **Growing attack surface** — company news that expands the customer's own footprint
+  (acquisitions, new offices, new products)
 
 Each card leads with a short, active-voice instruction ("Warn them: X is showing
 elevated risk"); the fuller explanation is a click away, not shown by default. A
@@ -120,7 +122,8 @@ http://localhost:8000/docs.
 ## Using it
 
 **Opportunities** is the landing screen and the only view in the nav — every signal,
-across four lanes (Own Cyber Posture, Usage, Suppliers, News). A few things to know:
+across four lanes (Own Cyber Posture, Usage, Monitoring Opportunities, Growing attack
+surface). A few things to know:
 
 - Each card shows a short, active-voice instruction by default (e.g. "Flag rising slot
   usage before it hits the licensed cap."). Click the **ⓘ** to see the fuller

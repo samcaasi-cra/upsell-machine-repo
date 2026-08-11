@@ -26,13 +26,13 @@ export const GROUPS: { key: OpportunityGroup; label: string; blurb: string }[] =
   },
   {
     key: "expansion",
-    label: "Suppliers",
-    blurb: "Third-party and sector risk detected outside the customer's own score.",
+    label: "Monitoring Opportunities",
+    blurb: "Third-party and sector risk, plus new people worth bringing into monitoring or engagement.",
   },
   {
     key: "engagement",
-    label: "News",
-    blurb: "Company news and people moments worth a direct, timely touch.",
+    label: "Growing attack surface",
+    blurb: "Company news that expands the customer's own footprint — acquisitions, new offices, new products.",
   },
 ];
 
@@ -119,7 +119,7 @@ export function OpportunityBoard() {
       <header className="opp-topbar">
         <div className="opp-topbar-primary">
           <span className="opp-live-count">
-            {totalCount} open opportunit{totalCount === 1 ? "y" : "ies"}
+            {totalCount} engagement opportunit{totalCount === 1 ? "y" : "ies"}
             <span className="opp-live-count-sub">
               across {accountsWithOpps.size} account{accountsWithOpps.size === 1 ? "" : "s"}
             </span>
@@ -275,27 +275,46 @@ function Ticket({
         </span>
         <span className="opp-ticket-source" onClick={(e) => e.stopPropagation()}>
           {card.data_source === "live" && (
-            <span title="Live — read directly from the SecurityScorecard API">
-              <LiveIcon style={{ color: "var(--moss)" }} />
-            </span>
+            <InfoPopover
+              label="Where this data comes from"
+              align="right"
+              icon={<LiveIcon style={{ color: "var(--moss)" }} />}
+            >
+              <span className="opp-source-pop-head">Live — SecurityScorecard API</span>
+              {card.source_detail}
+            </InfoPopover>
           )}
           {card.data_source === "researched" && (
-            <span title="Researched — assembled from public sources, then cached">
-              <ResearchedIcon style={{ color: "var(--petrol)" }} />
-            </span>
+            <InfoPopover
+              label="Where this data comes from"
+              align="right"
+              icon={<ResearchedIcon style={{ color: "var(--petrol)" }} />}
+            >
+              <span className="opp-source-pop-head">Researched — assembled, then cached</span>
+              {card.source_detail}
+            </InfoPopover>
           )}
           {card.data_source === "sample" && (
-            <span title="Sample data — placeholder until the usage feed is connected">
-              <SampleIcon style={{ color: "var(--slate)" }} />
-            </span>
+            <InfoPopover
+              label="Where this data comes from"
+              align="right"
+              icon={<SampleIcon style={{ color: "var(--slate)" }} />}
+            >
+              <span className="opp-source-pop-head">Sample data — placeholder</span>
+              {card.source_detail}
+            </InfoPopover>
           )}
           {card.data_source === "concept" && (
-            <span
-              className="opp-concept-tag"
-              title={`Not built — concept${card.concept_trigger ? ` · ${card.concept_trigger}` : ""}`}
+            <InfoPopover
+              label="Not built — proposed source"
+              align="right"
+              icon={<span className="opp-concept-tag">⚑</span>}
             >
-              ⚑
-            </span>
+              <span className="opp-source-pop-head">
+                Not built — concept{card.concept_trigger ? ` · Trigger ${card.concept_trigger}` : ""}
+              </span>
+              {card.source_detail}
+            </InfoPopover>
           )}
         </span>
       </div>

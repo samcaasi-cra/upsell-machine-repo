@@ -368,6 +368,14 @@
 .info-pop-panel-right {
   right: 0;
 }
+.opp-source-pop-head {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.info-pop-trigger .opp-concept-tag {
+  cursor: pointer;
+}
 
 /* ---------- Legend ---------- */
 .opp-legend {

@@ -151,7 +151,8 @@ showing what it would surface once the data source exists.
 
 **Opportunities board** (the whole UI)
 - Greets the current CSM by name; the same name signs every drafted email
-- Four lanes: **Own Cyber Posture**, **Usage**, **Suppliers**, **News**
+- Four lanes: **Own Cyber Posture**, **Usage**, **Monitoring Opportunities**, **Growing
+  attack surface**
 - Searchable multi-select customer picker with logos, filtering the board
 - Default / Detailed / Compact view modes plus a text-size control
 - Short active-voice copy on each card, with the fuller explanation on click
@@ -222,10 +223,11 @@ to demo research populating from empty. Only touches `backend/data/`; never cred
 
 Open on the board. Land the autonomy claim early, then finish in Claude Desktop.
 
-1. **The board** — *"38 open opportunities across 13 accounts, and every one of them
-   came from a live API call."* Walk the four lanes in a sentence each.
-2. **Open a News card.** The drafted email is already addressed to the right person,
-   with the article attached. *"The CSM edits or sends. They don't write from scratch."*
+1. **The board** — *"38 engagement opportunities across 13 accounts, and every one of
+   them came from a live API call."* Walk the four lanes in a sentence each.
+2. **Open a Growing attack surface card.** The drafted email is already addressed to the
+   right person, with the article attached. *"The CSM edits or sends. They don't write
+   from scratch."*
 3. **Point at "Auto-researched <date> · Run now".** This is the strongest autonomy
    line, and it's verifiable: *"that ran by itself this morning, across all 13 accounts,
    and added 5 events. Nobody triggered it."*
