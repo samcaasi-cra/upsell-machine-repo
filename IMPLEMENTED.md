@@ -62,23 +62,28 @@ The UI labels this everywhere, but to be explicit:
 | SSC scores, grades, industry, score history | SecurityScorecard API | **Live** |
 | Third-party supplier detection + their scores | SecurityScorecard API | **Live** |
 | Customer roster | `backend/data/customers.json` + SSC portfolio sync | **Live** |
-| News events (acquisitions, offices, launches) | Google News RSS → OpenAI extraction | **Live, cached**, with a link to the source article |
-| Decision-makers / job titles | Research prompt run in Claude, pasted back | **Live, cached** |
+| News events (acquisitions, offices, launches) | Google News RSS → OpenAI extraction | **Researched**, cached, with a link to the source article |
+| Decision-makers / job titles | Research prompt run in Claude, pasted back | **Researched**, cached |
 | Agent reasoning (Today, Ask) | Live tool calls over the above | **Live** |
 | Platform usage (logins, slots, reports) | Deterministic placeholder generator | **Sample** — marked `◇ Sample data` |
 | Sponsor / CSM assignment | Seed data | **Sample** — no CRM connected |
 
-### Three tiers, always labelled
+### Four tiers, always labelled
 
-| Tier | Meaning | How it looks |
-|---|---|---|
-| **Live** | Real data from a real source | Normal card |
-| **Sample** | Real trigger logic, placeholder *input* data | `◇ Sample data` tag |
-| **Concept** | Trigger not built — an illustration of what it would surface | Dashed striped card, `⚑ Not built — concept`, plus the trigger number and the data source it's waiting on |
+Every card carries an icon for its tier — no card is unmarked.
 
-The distinction between *sample* and *concept* matters: sample cards run production
-logic on placeholder numbers, concept cards are pure illustration with invented numbers
-and no logic behind them.
+| Tier | Meaning | Count | How it looks |
+|---|---|---|---|
+| **Live** | Read directly from the SecurityScorecard API | 9 | Green live icon |
+| **Researched** | Real, but assembled by us from public sources and cached | 23 | Petrol researched icon |
+| **Sample** | Real trigger logic, placeholder *input* data | 6 | Grey sample icon |
+| **Concept** | Trigger not built — an illustration of what it would surface | 13 (off by default) | `⚑ Not built — concept`, plus the trigger number and the data source it's waiting on |
+
+Two distinctions worth drawing. **Live vs researched:** a score comes back from an API
+and is as true as SSC's data; a news event was searched for and extracted by a model, so
+it carries more uncertainty and is worth flagging as such. **Sample vs concept:** sample
+cards run production logic on placeholder numbers, concept cards are pure illustration
+with invented numbers and no logic behind them.
 
 **Concept cards are off by default** — the honest view is the one you get without
 thinking about it. Tick *"Show unbuilt triggers as concepts"* in the board legend to
