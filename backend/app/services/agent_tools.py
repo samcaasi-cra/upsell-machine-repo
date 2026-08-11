@@ -14,7 +14,7 @@ from .. import storage
 from ..models import NewsRecord
 from . import signals, ssc_client
 from .aggregation import gather_all_customer_data
-from .opportunities import build_opportunity_cards
+from .opportunities import _is_ignored_vendor, build_opportunity_cards
 
 
 def list_customers() -> list[dict]:
@@ -105,11 +105,18 @@ def get_supplier_risk(customer_id: str) -> dict:
     if customer is None:
         return {"error": f"No customer with id {customer_id}"}
     vendors = ssc_client.get_third_party_vendors(customer.domain, limit=50)
-    scored = [v for v in vendors if isinstance(v.get("score"), int)]
+    # Same filter the board applies: vendor detection fingerprints the tech stack, so
+    # Apache and the Linux Foundation come back as "suppliers" for almost everyone.
+    # Without this the agent confidently reports open-source projects as the top risk.
+    scored = [
+        v
+        for v in vendors
+        if isinstance(v.get("score"), int) and not _is_ignored_vendor(v.get("company"))
+    ]
     scored.sort(key=lambda v: v["score"])
     return {
         "customer": customer.name,
-        "total_detected": len(vendors),
+        "total_detected": len(scored),
         "riskiest": [{"company": v.get("company"), "domain": v.get("domain"), "score": v["score"]} for v in scored[:8]],
     }
 
