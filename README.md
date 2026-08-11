@@ -1,14 +1,32 @@
 # Gaia ARR Growth Agent — Project 5
 
-Watches a SecurityScorecard portfolio and tells a CSM which accounts to act on and what
-to say. Built on SSC APIs, with no SSC frontend involved.
+An **AI agent that helps CSMs upsell existing customers** (e.g. from Titan Watch to
+Titan MAX) — built on SecurityScorecard APIs, with no SSC frontend involved.
 
-- **The board** — every signal we can detect, in four lanes, each card carrying a
-  drafted email with the recipient already resolved
-- **Daily research** — searches the news for every account and extracts structured
-  events, unattended, once a day
-- **MCP server** — the same portfolio tools in any MCP client, no interface of ours
-  needed
+The main interface is the **Opportunities** board: every signal across the portfolio,
+grouped into four lanes —
+
+- **Own Cyber Posture** — evidence the customer's own security is already paying off
+- **Usage** — platform usage telling you the account is ready for more
+- **Suppliers** — third-party and sector risk detected outside the customer's own score
+- **News** — company news and people moments worth a direct, timely touch
+
+Each card leads with a short, active-voice instruction ("Warn them: X is showing
+elevated risk"); the fuller explanation is a click away, not shown by default. A
+**Default / Detailed / Compact** toggle and a text-size control let a CSM pick how
+much detail is on screen at once, and a search/multi-select picker (with customer
+logos) narrows the board to specific accounts instead of scanning everyone.
+
+Behind the board, **daily research** runs unattended: once a day it searches the news
+for every account and extracts structured events. And an **MCP server** exposes the same
+portfolio tools to any MCP client, so a CSM can work the portfolio with no interface of
+ours involved. See [MCP.md](MCP.md).
+
+The **Today** (agent-drafted daily priorities), **Ask** (plain-English portfolio Q&A),
+and **Customers** (per-account drill-down) views are still fully implemented in the
+codebase — backend endpoints and frontend components both — but aren't wired into the
+nav, since Opportunities is the one view CSMs use day to day. See
+[frontend/src/App.tsx](frontend/src/App.tsx) if you want to bring one back.
 
 - **[IMPLEMENTED.md](IMPLEMENTED.md)** — what's built, trigger coverage, data
   provenance, limitations, criteria self-assessment. Start here if you're reviewing.
@@ -93,39 +111,42 @@ http://localhost:8000/docs.
 
 ## Using it
 
-The app is a single **Opportunities board**.
+**Opportunities** is the landing screen and the only view in the nav — every signal,
+across four lanes (Own Cyber Posture, Usage, Suppliers, News). A few things to know:
 
-**Four lanes** — *Own Cyber Posture*, *Usage*, *Suppliers*, *News*. Each card leads with
-a short instruction; click the info icon for the fuller explanation behind it.
-
-**Click any card** for the drafted email: editable subject and body, a recipient
-dropdown covering every tracked decision-maker, reset-to-default, and copy. News cards
-also carry a link to the source article, which is appended to the email.
-
-**Customer picker** filters the board to the accounts you care about. **View modes**
-(Default / Detailed / Compact) and the text-size control adjust density.
+- Each card shows a short, active-voice instruction by default (e.g. "Flag rising slot
+  usage before it hits the licensed cap."). Click the **ⓘ** to see the fuller
+  explanation, or switch to the **Detailed** view to show it inline for every card.
+- **Default / Detailed / Compact** (top right) trade off how much is on screen at once;
+  Compact fits far more per lane without scrolling. **A− / A+** scales text size. Both
+  choices persist across reloads.
+- **Select customers** searches and multi-selects accounts (with logos, falling back to
+  initials avatars when a domain has no logo) to narrow the board — the default with
+  nothing selected is "Showing all customers."
+- Click a card for an editable drafted email with a recipient dropdown. News cards also
+  carry a link to the source article, which is appended to the email. Tick *"Show
+  unbuilt triggers as concepts"* for illustrative cards covering triggers that aren't
+  built yet.
+- **View in SecurityScorecard** links out to the team's portfolio in the SSC platform.
+- The greeting and the name signing each drafted email come from `CSM_NAME`.
 
 **Provenance icons** in the legend explain where each kind of data comes from. Tick
 **"Show unbuilt triggers as concepts"** for illustrative cards covering the triggers
 that aren't built yet — each names the data source it's waiting on.
 
-**"Auto-researched <date> · Run now"** is the daily research agent. It runs once per day
-while the backend is up; the button forces a run.
+**"Auto-researched &lt;date&gt; · Run now"** in the top bar is the daily research agent. It
+runs once per day while the backend is up; the button forces a run.
 
-### Reaching the agent
+**Reaching the agent.** The tool-calling agent isn't linked from the board, so there are
+two ways in. **MCP** — connect Claude Desktop to the same tools and work the portfolio
+conversationally ([MCP.md](MCP.md)); this is the recommended path. Or **the API** —
+`POST /agent/chat` for questions, `GET /today` for a ranked worklist with drafted
+emails. **Customers** (per-account drill-down: SSC score chart, usage breakdown, tracked
+decision-makers and news, "Add customer" / "Sync from portfolio") is likewise still
+implemented but not in the nav. All of these need `OPENAI_API_KEY` (or
+`ANTHROPIC_API_KEY`).
 
-The tool-calling agent isn't linked from the board. Two ways in:
-
-- **MCP** — connect Claude Desktop to the same tools and work the portfolio
-  conversationally. See [MCP.md](MCP.md). This is the recommended path.
-- **The API** — `POST /agent/chat` for questions, `GET /today` for a ranked worklist
-  with drafted emails.
-
-Both need `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`).
-
-### Research
-
-Two ways to populate decision-makers and news:
+**Research** — two ways to populate decision-makers and news:
 
 - *Auto-research* (needs `OPENAI_API_KEY`) — searches and extracts automatically. Works
   well for news; rarely finds decision-makers, see IMPLEMENTED.md for why.
@@ -161,7 +182,16 @@ backend/
   mcp_server.py  The tools over Model Context Protocol
 frontend/
   src/
-    components/  Board, customer picker, email drawer, controls
+    components/
+      OpportunityBoard.tsx   The main (and only nav'd) view
+      CustomerPicker.tsx     Search + multi-select customer filter, with logos
+      CustomerLogo.tsx       Clearbit logo lookup, initials-avatar fallback
+      BoardControls.tsx      Default/Detailed/Compact + text-size controls
+      InfoPopover.tsx        Click-to-reveal detail affordance ("ⓘ")
+      icons.tsx              Small inline SVG icon set
+      EmailDrawer.tsx        Editable drafted email for a card
+      TodayView.tsx, AgentChat.tsx, CustomerTable.tsx,
+      CustomerDetail.tsx, ...  Today/Ask/Customers views (not in the nav, see above)
     api/client.ts
 ```
 
