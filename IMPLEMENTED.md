@@ -55,18 +55,23 @@ apart.
 
 ## Data provenance — important for demos
 
-The UI labels this everywhere, but to be explicit:
+The UI labels this everywhere, but to be explicit here too: every row below names the
+exact call, file and cache lifetime behind it. Hover the <abbr title="In the app this is a click-to-reveal button (InfoPopover.tsx), not hover — markdown can't run React. Same ⓘ glyph, same intent: show the source without leaving the page.">ⓘ</abbr>
+for the microdetail; where the vendor publishes real docs, the field name itself links
+out to them.
 
-| Data | Source | Status |
+| Data | Exact source | Status |
 |---|---|---|
-| SSC scores, grades, industry, score history | SecurityScorecard API | **Live** |
-| Third-party supplier detection + their scores | SecurityScorecard API | **Live** |
-| Customer roster | `backend/data/customers.json` + SSC portfolio sync | **Live** |
-| News events (acquisitions, offices, launches) | Google News RSS → OpenAI extraction | **Researched**, cached, with a link to the source article |
-| Decision-makers / job titles | Research prompt run in Claude, pasted back | **Researched**, cached |
-| Agent reasoning (Today, Ask) | Live tool calls over the above | **Live** |
-| Platform usage (logins, slots, reports) | Deterministic placeholder generator | **Sample** — marked `◇ Sample data` |
-| Sponsor / CSM assignment | Seed data | **Sample** — no CRM connected |
+| [SSC current score, grade, industry](https://securityscorecard.readme.io/reference) <abbr title="GET /companies/{domain}. In-process response cache, 10 minutes (_CACHE_TTL_SECONDS = 600). backend/app/services/ssc_client.py, get_company(), line 106-108.">ⓘ</abbr> | SecurityScorecard API | **Live** |
+| [SSC score history](https://securityscorecard.readme.io/reference) <abbr title="GET /companies/{domain}/history/score, timing=weekly, from = today − 190 days. Feeds the 30-day and 182-day delta thresholds (±5 pts / ±10 pts) and the >95 flag. backend/app/services/ssc_client.py, get_score_history() + build_score_summary(), line 127-209.">ⓘ</abbr> | SecurityScorecard API | **Live** |
+| [Third-party / supplier detection](https://securityscorecard.readme.io/reference) <abbr title="GET /vendor-detection/{domain}/third-party, limit=50. No portfolio membership required — a fully read-only lookup. Filtered against a denylist of infrastructure/OSS false-positives (Apache, nginx, OpenSSL, CNCF, ...). backend/app/services/ssc_client.py, get_third_party_vendors(), line 111-124; filter in opportunities.py, _NOT_REAL_VENDORS.">ⓘ</abbr> | SecurityScorecard API | **Live** |
+| Portfolio membership (roster sync) <abbr title="GET/POST /portfolios to find-or-create one shared, org-visible portfolio named 'Upsell Machine Dashboard - Demo Domains - Do Not Delete'; PUT .../companies/{domain} to add a tracked domain; GET .../companies to read it back for 'Sync from portfolio'. backend/app/services/ssc_client.py, line 50-104.">ⓘ</abbr> | SecurityScorecard API | **Live** |
+| Customer roster (names, domains) <abbr title="Seed list at backend/data/customers.json, extended by the 'Add customer' form or by 'Sync from portfolio', which reads back anything added directly in the SSC UI. backend/app/storage.py, load_customers()/create_customer().">ⓘ</abbr> | `backend/data/customers.json` + SSC portfolio sync | **Live** roster, mixed-provenance rows |
+| News events (acquisitions, offices, launches) <abbr title="Feed: https://news.google.com/rss/search?q=... — headline, publish date, publisher and article link only, no article body (the DuckDuckGo/cloudscraper body-scraper was removed, see Known limitations). Extraction: OpenAI gpt-4o-mini, response_format=json_object, same prompt rules as the manual flow. Cached per domain at backend/data/news_events/{domain}.json. backend/app/services/web_research.py.">ⓘ</abbr> | [Google News RSS](https://news.google.com/rss/search?q=example) → [OpenAI](https://platform.openai.com/docs/api-reference/chat) extraction | **Researched**, cached, with a link to the source article |
+| Decision-makers / job titles <abbr title="No API call from our backend. decision_maker_prompt.py builds a prompt (employment test, fit test, title-evidence hierarchy, CISO/BISO priority, LinkedIn URL verification); a human runs it in Claude, which reaches indexed LinkedIn snippets our server can't fetch (a direct server-side fetch of a public LinkedIn profile returns 0 characters — login wall). Pasted-back JSON is parsed and cached at backend/data/decision_makers/{domain}.json. backend/app/routers/decision_makers.py (import endpoint).">ⓘ</abbr> | Research prompt run in [Claude](https://claude.ai/), pasted back | **Researched**, cached |
+| Agent reasoning (Today, Ask) <abbr title="gpt-4o-mini by default, overridable via AGENT_MODEL. Tool-calling loop over the same four tools MCP exposes (agent_tools.py); every tool call and its token cost is surfaced in the response. backend/app/services/agent.py, line 66-141.">ⓘ</abbr> | Live tool calls over the above | **Live** |
+| Platform usage (logins, slots, reports) <abbr title="Python's random.Random, seeded on customer_id for the licensed-slot cap (a contract property) and on f'{customer_id}:{today}' for everything else — deterministic per customer per day, so demos are stable within a day but drift day to day. No real feed exists yet. backend/app/services/mock_usage.py.">ⓘ</abbr> | [Deterministic placeholder generator](https://docs.python.org/3/library/random.html#random.Random) | **Sample** — marked `◇ Sample data` |
+| Sponsor / CSM assignment <abbr title="sponsor and csm fields in backend/data/customers.json, hand-entered — no CRM/Salesforce connection exists. See 'Why we're blocked on the rest' for what would replace this.">ⓘ</abbr> | Seed data | **Sample** — no CRM connected |
 
 ### Four tiers, always labelled
 
@@ -105,19 +110,19 @@ drive ARR growth"*.
 
 | # | Trigger | Data source |
 |---|---|---|
-| 1 | Nearing full utilisation of licensed vendor slots | Sample usage |
-| 2 | Acquisition announced | Automated news research |
-| 3 | Increasing utilisation of portfolio slots | Sample usage |
-| 5 | New offices / regional operations | Automated news research |
-| 6 | New product or service launch | Automated news research |
-| 7 | Supplier breach anticipated | **Live** — SSC vendor-detection scores |
-| 10 | High platform engagement | Sample usage |
-| 11 | Close peer breach anticipated | **Live** — SSC scores, anonymised across tracked customers |
-| 12 | Top security score within industry | **Live** — SSC scores |
-| 13 | Significant SSC score increase | **Live** — SSC score history |
-| 17 | New stakeholders identified (DMU) | Decision-maker research |
-| 19 | Alumni joins another customer org | Cross-customer decision-maker diffing |
-| 21 | New user logs in for the first time | Sample usage |
+| 1 | Nearing full utilisation of licensed vendor slots | Sample usage <abbr title="slots_used / licensed_slots >= 0.85 (_SLOT_CAPACITY_WARN_PCT). Both numbers come from mock_usage.py's per-customer/per-day generator. signals.py, build_signal().">ⓘ</abbr> |
+| 2 | Acquisition announced | Automated news research <abbr title="gpt-4o-mini classifies each headline's event_type; 'acquisition' events become this card. Deduplicated across outlets by shared named subject (opportunities.py, _dedupe_news_events()).">ⓘ</abbr> |
+| 3 | Increasing utilisation of portfolio slots | Sample usage <abbr title="slots_delta_7d, the difference between this week's and last week's slots_filled_7d in mock_usage.py. Computed by the signal layer and served over /signals; no standalone card — folds into the Usage lane's slot-capacity signal.">ⓘ</abbr> |
+| 5 | New offices / regional operations | Automated news research <abbr title="event_type == 'expansion' from the same Google News → gpt-4o-mini pipeline as trigger #2.">ⓘ</abbr> |
+| 6 | New product or service launch | Automated news research <abbr title="event_type == 'launch' from the same Google News → gpt-4o-mini pipeline as trigger #2.">ⓘ</abbr> |
+| 7 | Supplier breach anticipated | **Live** <abbr title="Worst-scoring entry from GET /vendor-detection/{domain}/third-party below _SUPPLIER_RISK_SCORE_THRESHOLD = 50, after the infrastructure/OSS denylist. opportunities.py.">ⓘ</abbr> — SSC vendor-detection scores |
+| 10 | High platform engagement | Sample usage <abbr title="engagement_score = slots_filled_7d*3 + reports_generated_7d + total_visits_7d, threshold 75 (_ENGAGEMENT_THRESHOLD). All three inputs are mock_usage.py numbers. signals.py, build_signal().">ⓘ</abbr> |
+| 11 | Close peer breach anticipated | **Live** <abbr title="Largest SSC score decline among other tracked customers sharing the same industry field — the peer is never named, only the industry and the delta. opportunities.py, 'close peer breach anticipated', line ~399-417.">ⓘ</abbr> — SSC scores, anonymised across tracked customers |
+| 12 | Top security score within industry | **Live** <abbr title="Customer's current score is the max among all tracked customers sharing its SSC industry field. opportunities.py + signals.py industry_top_ids()/industry_stats().">ⓘ</abbr> — SSC scores |
+| 13 | Significant SSC score increase | **Live** <abbr title="delta_30d > 5 or delta_182d > 10, computed against GET /companies/{domain}/history/score. ssc_client.py, build_score_summary().">ⓘ</abbr> — SSC score history |
+| 17 | New stakeholders identified (DMU) | Decision-maker research <abbr title="A person present in the latest pasted-back decision-maker JSON who wasn't in the previous cached list for that domain — status='new'. opportunities.py, decision-maker diff block.">ⓘ</abbr> |
+| 19 | Alumni joins another customer org | Cross-customer decision-maker diffing <abbr title="Matches a newly-identified person's name (or LinkedIn URL) against every other tracked customer's cached decision-maker list — no LinkedIn Sales Navigator involved, just our own accumulated research. opportunities.py, line ~486-500.">ⓘ</abbr> |
+| 21 | New user logs in for the first time | Sample usage <abbr title="A name in this day's mock_usage.py individuals list that isn't in backend/data/usage_individuals/{customer_id}.json yet; that file is then updated. mock_usage.py, build_usage_summary().">ⓘ</abbr> |
 
 Trigger #3 is computed by the signal layer and served over `/signals`, but has no card
 of its own on the board — it shows up as part of the Usage lane's slot-capacity signal.

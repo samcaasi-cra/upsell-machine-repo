@@ -11,6 +11,7 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+.claude/settings.local.json
 
 # Runtime-generated cache from the decision-maker research import flow
 backend/data/decision_makers/*.json

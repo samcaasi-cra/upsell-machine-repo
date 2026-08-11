@@ -50,10 +50,13 @@ nav, since Opportunities is the one view CSMs use day to day. See
 ```bash
 cd backend
 python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt
-```
 
-On macOS/Linux use `.venv/bin/python` in place of `.venv/Scripts/python` throughout.
+# macOS/Linux
+.venv/bin/python -m pip install -r requirements.txt
+
+# Windows
+.venv\Scripts\python -m pip install -r requirements.txt
+```
 
 ### 2. Credentials
 
@@ -86,7 +89,12 @@ Two terminals.
 **Terminal 1 — backend:**
 ```bash
 cd backend
-.venv/Scripts/python -m uvicorn app.main:app --reload --port 8000
+
+# macOS/Linux
+.venv/bin/python -m uvicorn app.main:app --reload --port 8000
+
+# Windows
+.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
 
 **Terminal 2 — frontend:**
@@ -159,11 +167,20 @@ implemented but not in the nav. All of these need `OPENAI_API_KEY` (or
 
 Live research is non-deterministic, so don't let a demo depend on it succeeding:
 
+macOS/Linux:
 ```bash
 cd backend
-.venv/Scripts/python demo.py snapshot   # capture a good state
-.venv/Scripts/python demo.py status     # compare live vs baseline
-.venv/Scripts/python demo.py restore    # roll back, then restart the backend
+.venv/bin/python demo.py snapshot   # capture a good state
+.venv/bin/python demo.py status     # compare live vs baseline
+.venv/bin/python demo.py restore    # roll back, then restart the backend
+```
+
+Windows:
+```bash
+cd backend
+.venv\Scripts\python demo.py snapshot
+.venv\Scripts\python demo.py status
+.venv\Scripts\python demo.py restore
 ```
 
 ---
