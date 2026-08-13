@@ -5,7 +5,12 @@
     "domain": "stripe.com",
     "sponsor": "Head of Vendor Risk",
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-06-01",
+    "last_purchase_amount": 42000,
+    "discount_pct": 15,
+    "renewal_date": "2026-06-01"
   },
   {
     "id": "cust02",
@@ -13,7 +18,12 @@
     "domain": "notion.so",
     "sponsor": null,
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-09-10",
+    "last_purchase_amount": 18000,
+    "discount_pct": null,
+    "renewal_date": "2026-09-10"
   },
   {
     "id": "cust03",
@@ -21,7 +31,12 @@
     "domain": "canva.com",
     "sponsor": "VP Information Security",
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-05-20",
+    "last_purchase_amount": 35000,
+    "discount_pct": 20,
+    "renewal_date": "2026-05-20"
   },
   {
     "id": "cust04",
@@ -29,7 +44,12 @@
     "domain": "monday.com",
     "sponsor": null,
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan MAX",
+    "last_purchase_date": "2025-11-02",
+    "last_purchase_amount": 51000,
+    "discount_pct": 10,
+    "renewal_date": "2026-11-02"
   },
   {
     "id": "cust05",
@@ -37,7 +57,12 @@
     "domain": "hubspot.com",
     "sponsor": "Director of Security",
     "csm": "Leslie Caminade",
-    "notes": "Has a CSM assigned - control example."
+    "notes": "Has a CSM assigned - control example.",
+    "last_purchase_product": "Titan MAX",
+    "last_purchase_date": "2025-03-14",
+    "last_purchase_amount": 60000,
+    "discount_pct": null,
+    "renewal_date": "2026-03-14"
   },
   {
     "id": "cust06",
@@ -45,7 +70,12 @@
     "domain": "atlassian.com",
     "sponsor": null,
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-07-08",
+    "last_purchase_amount": 39000,
+    "discount_pct": 25,
+    "renewal_date": "2026-07-08"
   },
   {
     "id": "cust07",
@@ -53,7 +83,12 @@
     "domain": "klarna.com",
     "sponsor": "Head of Third Party Risk",
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan MAX",
+    "last_purchase_date": "2025-10-25",
+    "last_purchase_amount": 47000,
+    "discount_pct": null,
+    "renewal_date": "2026-10-25"
   },
   {
     "id": "cust08",
@@ -61,7 +96,12 @@
     "domain": "monzo.com",
     "sponsor": null,
     "csm": "Victor Tarrosa",
-    "notes": "Has a CSM assigned - control example."
+    "notes": "Has a CSM assigned - control example.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-04-30",
+    "last_purchase_amount": 28000,
+    "discount_pct": 12,
+    "renewal_date": "2026-04-30"
   },
   {
     "id": "cust09",
@@ -69,7 +109,12 @@
     "domain": "deliveroo.co.uk",
     "sponsor": null,
     "csm": null,
-    "notes": "Velocity customer, no CSM currently assigned."
+    "notes": "Velocity customer, no CSM currently assigned.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-08-01",
+    "last_purchase_amount": 31000,
+    "discount_pct": 18,
+    "renewal_date": "2026-08-01"
   },
   {
     "id": "1c9305be9d",
@@ -77,7 +122,12 @@
     "domain": "hootsuite.com",
     "sponsor": null,
     "csm": null,
-    "notes": null
+    "notes": null,
+    "last_purchase_product": "Titan MAX",
+    "last_purchase_date": "2025-12-05",
+    "last_purchase_amount": 55000,
+    "discount_pct": null,
+    "renewal_date": "2026-12-05"
   },
   {
     "id": "d5585b7b67",
@@ -85,7 +135,12 @@
     "domain": "gov.uk",
     "sponsor": null,
     "csm": null,
-    "notes": "Imported from the SecurityScorecard portfolio."
+    "notes": "Imported from the SecurityScorecard portfolio.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-02-18",
+    "last_purchase_amount": 26000,
+    "discount_pct": 22,
+    "renewal_date": "2026-02-18"
   },
   {
     "id": "d582bee60e",
@@ -93,7 +148,12 @@
     "domain": "szkb.ch",
     "sponsor": null,
     "csm": null,
-    "notes": "Imported from the SecurityScorecard portfolio."
+    "notes": "Imported from the SecurityScorecard portfolio.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-09-29",
+    "last_purchase_amount": 33000,
+    "discount_pct": null,
+    "renewal_date": "2026-09-29"
   },
   {
     "id": "2aa3a21b26",
@@ -101,6 +161,11 @@
     "domain": "hennypenny.com",
     "sponsor": null,
     "csm": null,
-    "notes": "Imported from the SecurityScorecard portfolio."
+    "notes": "Imported from the SecurityScorecard portfolio.",
+    "last_purchase_product": "Titan Watch",
+    "last_purchase_date": "2025-06-22",
+    "last_purchase_amount": 21000,
+    "discount_pct": 15,
+    "renewal_date": "2026-06-22"
   }
 ]

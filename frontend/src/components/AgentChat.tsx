@@ -68,7 +68,6 @@ export function AgentChat() {
     <div className="opp-board" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 190px)" }}>
       <header className="opp-topbar">
         <div>
-          <span className="opp-eyebrow">SecurityScorecard · Customer Success</span>
           <h2>Ask</h2>
         </div>
         <div className="opp-topbar-meta">
@@ -121,23 +120,35 @@ export function AgentChat() {
               </div>
             ) : (
               <div>
-                {/* The tool trace is the point: it shows the agent decided what to look at. */}
+                {/* The tool trace is the point: it shows the agent decided what to look at --
+                    and, distinctly, when it decided to act rather than just read. */}
                 {turn.toolCalls && turn.toolCalls.length > 0 && (
                   <div style={{ marginBottom: 8, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     <span style={{ fontSize: "0.62rem", color: "var(--slate)", textTransform: "uppercase", letterSpacing: 0.5 }}>
                       Agent called
                     </span>
-                    {turn.toolCalls.map((tc, j) => (
-                      <span
-                        key={j}
-                        className="opp-sample-tag"
-                        style={{ borderStyle: "solid", borderColor: "var(--petrol)", color: "var(--petrol)" }}
-                        title={JSON.stringify(tc.arguments)}
-                      >
-                        {tc.tool}
-                        {typeof tc.arguments.customer_id === "string" ? `(${tc.arguments.customer_id})` : "()"}
-                      </span>
-                    ))}
+                    {turn.toolCalls.map((tc, j) => {
+                      const isAction = tc.tool === "queue_outreach";
+                      return (
+                        <span
+                          key={j}
+                          className="opp-sample-tag"
+                          style={{
+                            borderStyle: "solid",
+                            borderColor: isAction ? "var(--moss)" : "var(--petrol)",
+                            color: isAction ? "var(--moss)" : "var(--petrol)",
+                          }}
+                          title={
+                            isAction
+                              ? `Reflected: ${tc.arguments.reasoning}\n\nSubject: ${tc.arguments.subject}`
+                              : JSON.stringify(tc.arguments)
+                          }
+                        >
+                          {isAction ? "✓ queue_outreach" : tc.tool}
+                          {typeof tc.arguments.customer_id === "string" ? `(${tc.arguments.customer_id})` : "()"}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
                 <div

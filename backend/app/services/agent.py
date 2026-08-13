@@ -19,7 +19,8 @@ from typing import Optional
 from . import agent_tools
 from .redaction import Pseudonymiser
 
-_MAX_ITERATIONS = 6  # a runaway loop is the main cost risk with tool-calling
+_MAX_ITERATIONS = 10  # a runaway loop is the main cost risk with tool-calling; queuing
+# several priorities each takes its own round on top of the survey+drill rounds
 
 SYSTEM_PROMPT = """You are a Customer Success assistant for SecurityScorecard, helping a \
 CSM decide where to spend their time.
@@ -42,6 +43,16 @@ Rules:
 - Be concise and practical. A CSM wants to know who to contact and why, not a report.
 - If asked to draft outreach, keep it short, specific, and free of hype.
 
+queue_outreach is the only tool that writes anything -- everything else only reads.
+Use it once you're done drafting AND the task actually calls for action: you were
+asked to draft/queue/send something, or you're producing today's worklist. Don't
+queue outreach for a plain question that just wants an answer.
+Before calling it, reflect: re-read your own draft and check it's specific, grounded
+in numbers you actually retrieved, and free of hype. Put that check itself in the
+`reasoning` argument -- if the draft fails your own check, redraft before queuing,
+don't queue it anyway. Queuing is a decision, not a delivery; a human still reviews
+and sends it.
+
 Customers and people appear as labels (CUST_A, PERSON_1) rather than names, for data
 protection. Use those labels exactly as given -- they are substituted back to real
 names before the reader sees your answer. Never guess at or invent a real name."""
@@ -57,6 +68,19 @@ def active_provider() -> Optional[str]:
     if os.getenv("OPENAI_API_KEY"):
         return "openai"
     return None
+
+
+def _prepare_tool_args(name: str, args: dict, masker: Pseudonymiser) -> dict:
+    """queue_outreach persists text a human will read (and it's shown in the tool-call
+    trace) -- restore real names before it reaches storage, rather than leaving CUST_A
+    labels baked into a queued email."""
+    if name != "queue_outreach":
+        return args
+    restored = dict(args)
+    for key in ("subject", "body", "reasoning"):
+        if isinstance(restored.get(key), str):
+            restored[key] = masker.restore(restored[key])
+    return restored
 
 
 def _run_openai(messages: list[dict], masker: Pseudonymiser) -> dict:
@@ -111,6 +135,7 @@ def _run_openai(messages: list[dict], masker: Pseudonymiser) -> dict:
                 args = json.loads(tc.function.arguments or "{}")
             except json.JSONDecodeError:
                 args = {}
+            args = _prepare_tool_args(tc.function.name, args, masker)
             result = agent_tools.call(tc.function.name, args)
             tool_calls_made.append({"tool": tc.function.name, "arguments": args})
             # Redact on the way out -- this is the payload that actually leaves us.
@@ -161,8 +186,9 @@ def _run_anthropic(messages: list[dict], masker: Pseudonymiser) -> dict:
         convo.append({"role": "assistant", "content": resp.content})
         results = []
         for tu in tool_uses:
-            result = agent_tools.call(tu.name, dict(tu.input))
-            tool_calls_made.append({"tool": tu.name, "arguments": dict(tu.input)})
+            args = _prepare_tool_args(tu.name, dict(tu.input), masker)
+            result = agent_tools.call(tu.name, args)
+            tool_calls_made.append({"tool": tu.name, "arguments": args})
             safe = masker.redact(result)
             results.append(
                 {"type": "tool_result", "tool_use_id": tu.id, "content": json.dumps(safe, default=str)}

@@ -30,6 +30,7 @@ from .signals import _ENGAGEMENT_THRESHOLD, _SLOT_CAPACITY_WARN_PCT
 _BENCHMARK_VISITS_PER_USER = 5.0
 _SUPPLIER_RISK_SCORE_THRESHOLD = 50  # roughly grade F territory -- deliberately strict,
 # see _NOT_REAL_VENDORS below for why a looser bar is too noisy to be a signal
+_QUESTIONNAIRE_LOW_REMAINING_PCT = 0.20  # warn once 80%+ of the licensed questionnaires are used
 
 # vendor-detection frequently flags open-source/infrastructure projects that every
 # company's tech stack touches (detected via fingerprinting, e.g. "runs on Apache") --
@@ -383,6 +384,115 @@ def build_opportunity_cards(
             "seen-individuals cache. backend/app/services/mock_usage.py:18 (build_usage_summary()); "
             f"backend/data/usage_individuals/{customer.id}.json.",
         )
+
+    # --- Questionnaire capacity running low ---
+    if usage.questionnaires_licensed > 0:
+        remaining_pct = usage.questionnaires_remaining / usage.questionnaires_licensed
+        if remaining_pct <= _QUESTIONNAIRE_LOW_REMAINING_PCT:
+            card(
+                "adoption",
+                f"{usage.questionnaires_remaining}/{usage.questionnaires_licensed}",
+                "questionnaires remaining",
+                "watch",
+                "Flag low questionnaire capacity before it limits their vendor assessments.",
+                f"{usage.questionnaires_remaining} of {usage.questionnaires_licensed} questionnaires "
+                "remaining this cycle",
+                f"{customer.name} has {usage.questionnaires_remaining} of {usage.questionnaires_licensed} "
+                "licensed questionnaires left this cycle. Worth a short conversation about capacity before "
+                "it becomes a blocker for their next vendor assessment.",
+                data_source="sample",
+                detail=f"Only {usage.questionnaires_remaining} of {usage.questionnaires_licensed} licensed "
+                "questionnaires remain this cycle.",
+                source_detail="Deterministic placeholder generator, seeded per customer per day — stands in "
+                "for the SecurityScorecard Questionnaires (Atlas) API, which isn't integrated yet. "
+                "backend/app/services/mock_usage.py:18 (build_usage_summary()).",
+            )
+
+    # --- Unused questionnaires expiring soon ---
+    if usage.questionnaires_expiring_soon > 0:
+        card(
+            "adoption",
+            str(usage.questionnaires_expiring_soon),
+            f"questionnaires expiring in {usage.questionnaires_expiring_in_days}d",
+            "watch",
+            "Remind them to use expiring questionnaires before they're lost.",
+            f"{usage.questionnaires_expiring_soon} unused questionnaires expiring soon",
+            f"{customer.name} has {usage.questionnaires_expiring_soon} unused questionnaire"
+            f"{'s' if usage.questionnaires_expiring_soon != 1 else ''} expiring in "
+            f"{usage.questionnaires_expiring_in_days} days. Worth a quick nudge so they get the value before "
+            "the allowance resets.",
+            data_source="sample",
+            detail=f"{usage.questionnaires_expiring_soon} unused questionnaire"
+            f"{'s' if usage.questionnaires_expiring_soon != 1 else ''} expire in "
+            f"{usage.questionnaires_expiring_in_days} days.",
+            source_detail="Deterministic placeholder generator, seeded per customer per day — stands in for "
+            "the SecurityScorecard Questionnaires (Atlas) API, which isn't integrated yet. "
+            "backend/app/services/mock_usage.py:18 (build_usage_summary()).",
+        )
+
+    # --- Last year's purchase, as an upsell anchor ---
+    if customer.last_purchase_product and customer.last_purchase_amount:
+        card(
+            "adoption",
+            f"${customer.last_purchase_amount / 1000:.0f}k",
+            "purchased last year",
+            "info",
+            f"Revisit last year's {customer.last_purchase_product} purchase as an upsell anchor.",
+            f"Following up on your {customer.last_purchase_product} purchase",
+            f"{customer.name} purchased {customer.last_purchase_product} for "
+            f"${customer.last_purchase_amount:,.0f} on {customer.last_purchase_date}. Worth revisiting now "
+            "that a year's usage has shown what's working and what they've grown into.",
+            badge=customer.last_purchase_product,
+            data_source="sample",
+            detail=f"Purchased {customer.last_purchase_product} for ${customer.last_purchase_amount:,.0f} "
+            f"on {customer.last_purchase_date}.",
+            source_detail="Seed data in customers.json (last_purchase_product/date/amount) -- stands in for "
+            "a CRM/billing feed we don't have. backend/data/customers.json.",
+        )
+
+    # --- Discount: keep it or uplift pricing at renewal, decided from the same usage
+    # signals already driving the vendor-slots and engagement triggers above -- not a
+    # separate heuristic. ---
+    if customer.discount_pct:
+        strong_usage = engagement_score >= _ENGAGEMENT_THRESHOLD or (
+            usage.licensed_slots > 0 and usage.slots_used / usage.licensed_slots >= _SLOT_CAPACITY_WARN_PCT
+        )
+        if strong_usage:
+            card(
+                "adoption",
+                f"{customer.discount_pct:.0f}%",
+                "discount — uplift?",
+                "watch",
+                f"Their usage justifies revisiting the {customer.discount_pct:.0f}% discount at renewal.",
+                "Checking in ahead of your renewal",
+                f"{customer.name} is currently on a {customer.discount_pct:.0f}% discount, but usage this "
+                "week shows the account getting real value from the platform. Worth a conversation about "
+                "phasing the discount out at renewal rather than rolling it over automatically.",
+                data_source="sample",
+                detail=f"On a {customer.discount_pct:.0f}% discount with strong current usage — a case for "
+                "uplifting price at renewal rather than renewing the discount.",
+                source_detail="Discount from customers.json (seed data, stands in for a CRM/billing feed); "
+                "usage strength from the same engagement/slot-capacity thresholds as the triggers above. "
+                "backend/app/services/opportunities.py.",
+            )
+        else:
+            card(
+                "adoption",
+                f"{customer.discount_pct:.0f}%",
+                "discount — keep it",
+                "info",
+                f"Hold the {customer.discount_pct:.0f}% discount — usage doesn't support removing it yet.",
+                "Checking in ahead of your renewal",
+                f"{customer.name} is currently on a {customer.discount_pct:.0f}% discount, and usage this "
+                "week doesn't yet show the engagement that would justify removing it. Worth protecting the "
+                "renewal by keeping the discount rather than risking churn over price.",
+                data_source="sample",
+                detail=f"On a {customer.discount_pct:.0f}% discount with usage that doesn't yet support "
+                "uplifting price — recommend keeping the discount to protect the renewal.",
+                source_detail="Discount from customers.json (seed data, stands in for a CRM/billing feed); "
+                "usage strength from the same engagement/slot-capacity thresholds as the triggers above. "
+                "backend/app/services/opportunities.py.",
+            )
 
     # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no
     # portfolio membership required -- the endpoint returns each vendor's own score) ---

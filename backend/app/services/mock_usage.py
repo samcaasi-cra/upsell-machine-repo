@@ -13,12 +13,14 @@ from ..models import UsageIndividual, UsageSummary
 _FIRST_NAMES = ["Alex", "Priya", "Jordan", "Mei", "Sam", "Nina", "Theo", "Ola", "Freya", "Ravi"]
 _LAST_NAMES = ["Chen", "Okafor", "Silva", "Novak", "Rahman", "Berg", "Kowalski", "Diallo"]
 _LICENSE_TIERS = [8, 10, 12, 15, 20]
+_QUESTIONNAIRE_TIERS = [10, 15, 20, 25, 30]
 
 
 def build_usage_summary(customer_id: str) -> UsageSummary:
     # Capacity is a property of the contract, not the day -- seeded by customer only.
     cap_rng = random.Random(customer_id)
     licensed_slots = cap_rng.choice(_LICENSE_TIERS)
+    questionnaires_licensed = cap_rng.choice(_QUESTIONNAIRE_TIERS)
 
     # Everything else is seeded per customer *and* day.
     rng = random.Random(f"{customer_id}:{date.today().isoformat()}")
@@ -44,6 +46,17 @@ def build_usage_summary(customer_id: str) -> UsageSummary:
     new_individuals = [n for n in names if n not in known]
     storage.save_known_individuals(customer_id, sorted(known | set(names)))
 
+    # Same trick as slots_used above: draw "completed" from a range that occasionally
+    # exceeds the cap, so remaining sometimes lands low or at zero without a second
+    # explicit branch.
+    questionnaires_completed = rng.randint(0, questionnaires_licensed + 5)
+    questionnaires_remaining = max(0, questionnaires_licensed - questionnaires_completed)
+    # A minority of days, some of what's left is about to expire unused.
+    questionnaires_expiring_soon = (
+        rng.randint(1, questionnaires_remaining) if questionnaires_remaining > 0 and rng.random() < 0.4 else 0
+    )
+    questionnaires_expiring_in_days = rng.randint(5, 45) if questionnaires_expiring_soon > 0 else 0
+
     return UsageSummary(
         slots_filled_7d=slots_filled_7d,
         slots_delta_7d=slots_delta_7d,
@@ -53,4 +66,8 @@ def build_usage_summary(customer_id: str) -> UsageSummary:
         slots_used=slots_used,
         individuals=individuals,
         new_individuals=new_individuals,
+        questionnaires_licensed=questionnaires_licensed,
+        questionnaires_remaining=questionnaires_remaining,
+        questionnaires_expiring_soon=questionnaires_expiring_soon,
+        questionnaires_expiring_in_days=questionnaires_expiring_in_days,
     )

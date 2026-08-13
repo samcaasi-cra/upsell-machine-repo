@@ -4,7 +4,16 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from . import config
-from .models import Customer, CustomerCreate, CustomerUpdate, DecisionMakerRecord, DecisionMaker, NewsEvent, NewsRecord
+from .models import (
+    Customer,
+    CustomerCreate,
+    CustomerUpdate,
+    DecisionMakerRecord,
+    DecisionMaker,
+    NewsEvent,
+    NewsRecord,
+    QueuedAction,
+)
 
 
 def _ensure_data_dir() -> None:
@@ -132,3 +141,49 @@ def save_news_events(domain: str, events: List[NewsEvent]) -> NewsRecord:
     )
     _news_file(domain).write_text(record.model_dump_json(indent=2), encoding="utf-8")
     return record
+
+
+def load_queued_actions() -> List[QueuedAction]:
+    _ensure_data_dir()
+    if not config.QUEUED_ACTIONS_FILE.exists():
+        return []
+    raw = json.loads(config.QUEUED_ACTIONS_FILE.read_text(encoding="utf-8"))
+    return [QueuedAction(**row) for row in raw]
+
+
+def _save_queued_actions(actions: List[QueuedAction]) -> None:
+    _ensure_data_dir()
+    config.QUEUED_ACTIONS_FILE.write_text(
+        json.dumps([a.model_dump() for a in actions], indent=2),
+        encoding="utf-8",
+    )
+
+
+def add_queued_action(customer_id: str, customer_name: str, subject: str, body: str, reasoning: str) -> QueuedAction:
+    actions = load_queued_actions()
+    action = QueuedAction(
+        id=uuid.uuid4().hex[:10],
+        customer_id=customer_id,
+        customer_name=customer_name,
+        subject=subject,
+        body=body,
+        reasoning=reasoning,
+        status="queued",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    actions.append(action)
+    _save_queued_actions(actions)
+    return action
+
+
+def update_action_status(action_id: str, status: str) -> Optional[QueuedAction]:
+    actions = load_queued_actions()
+    updated = None
+    for i, a in enumerate(actions):
+        if a.id == action_id:
+            updated = a.model_copy(update={"status": status})
+            actions[i] = updated
+            break
+    if updated is not None:
+        _save_queued_actions(actions)
+    return updated

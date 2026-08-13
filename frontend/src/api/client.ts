@@ -6,6 +6,7 @@ import type {
   DecisionMakerRecord,
   NewsRecord,
   OpportunityBoardResponse,
+  QueuedAction,
 } from "../types";
 
 // Set VITE_API_BASE_URL at build time to point at a deployed backend; falls back to
@@ -95,6 +96,9 @@ export const api = {
         action: string;
         email_subject: string;
         email_body: string;
+        queued: boolean;
+        action_id: string | null;
+        reflection: string | null;
       }[];
       tokens: { prompt: number; completion: number };
       tool_calls: string[];
@@ -109,6 +113,9 @@ export const api = {
       provider: string;
       model: string;
     }>("/agent/chat", { method: "POST", body: JSON.stringify({ messages }) }),
+  listActions: () => request<QueuedAction[]>("/actions"),
+  approveAction: (actionId: string) => request<QueuedAction>(`/actions/${actionId}/approve`, { method: "POST" }),
+  dismissAction: (actionId: string) => request<QueuedAction>(`/actions/${actionId}/dismiss`, { method: "POST" }),
   getResearchStatus: () =>
     request<{
       enabled: boolean;

@@ -15,7 +15,7 @@ import re
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from .. import config
+from .. import config, storage
 from . import agent
 
 _BRIEFING_PROMPT = """Produce today's CSM worklist for this portfolio.
@@ -24,7 +24,12 @@ Survey with list_customers, then call get_customer_detail on the three accounts 
 most need attention today. Base the ranking on what the data actually shows -- score
 movement, signals that fired, capacity limits, stakeholder changes, recent news.
 
-Return ONLY a JSON object in exactly this shape, no prose around it:
+For each of the three, once you've drafted its outreach, call queue_outreach with that
+draft and your one-sentence reflection before moving on to the next one -- don't wait
+until the end to queue all three.
+
+After all three are queued, return ONLY a JSON object in exactly this shape, no prose
+around it:
 
 {
   "priorities": [
@@ -84,14 +89,36 @@ def build(force: bool = False) -> dict:
         if cached:
             return cached
 
+    existing_action_ids = {a.id for a in storage.load_queued_actions()}
     result = agent.run([{"role": "user", "content": _BRIEFING_PROMPT}])
     # agent.run has already restored real names in `reply`.
     parsed = _extract_json(result.get("reply", ""))
 
+    # Match each priority to the queued action the agent created for it, so the
+    # worklist can show its own reflection alongside the draft rather than the two
+    # living in separate places.
+    new_actions = [a for a in storage.load_queued_actions() if a.id not in existing_action_ids]
+    priorities = (parsed or {}).get("priorities", [])
+    for p in priorities:
+        match = next(
+            (a for a in new_actions if a.customer_name.strip().lower() == str(p.get("customer", "")).strip().lower()),
+            None,
+        )
+        p["queued"] = match is not None
+        p["action_id"] = match.id if match else None
+        p["reflection"] = match.reasoning if match else None
+        if match:
+            # The JSON summary asks the model to redraft the email a second time, and
+            # that redraft isn't guaranteed to restore real names as reliably as the
+            # queue_outreach call already did (verified -- see agent._prepare_tool_args).
+            # Show the queued, already-verified text rather than trusting a second draft.
+            p["email_subject"] = match.subject
+            p["email_body"] = match.body
+
     payload = {
         "date": date.today().isoformat(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "priorities": (parsed or {}).get("priorities", []),
+        "priorities": priorities,
         "tokens": result.get("tokens", {}),
         "provider": result.get("provider"),
         "model": result.get("model"),

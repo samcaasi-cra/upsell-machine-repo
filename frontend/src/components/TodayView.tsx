@@ -1,8 +1,42 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import "./OpportunityBoard.css";
+import type { ViewMode } from "./BoardControls";
+import { OpportunityTicket, type TicketData } from "./OpportunityTicket";
 
 type Briefing = Awaited<ReturnType<typeof api.getToday>>;
+type Priority = Briefing["priorities"][number];
+
+function actionBadge(p: Priority, status: "approved" | "dismissed" | undefined): string | null {
+  if (!p.action_id) return null;
+  if (status === "approved") return "✓ Approved";
+  if (status === "dismissed") return "Dismissed";
+  return "✓ Queued by agent";
+}
+
+/** Adapts one of the agent's freely-drafted priorities into the same card shape the
+ * Opportunities board renders, so a CSM sees the same kind of card wherever it shows
+ * up. There's no single real data_source for a synthesized worklist item -- it's the
+ * agent's own reasoning over several sources -- so "researched" (assembled by us, not
+ * returned by one API) is the closest honest fit. */
+function toTicketData(p: Priority, index: number, status: "approved" | "dismissed" | undefined): TicketData {
+  return {
+    customer_name: p.customer,
+    data_source: "researched",
+    source_detail:
+      "Synthesized by the Today agent from live SSC scores, sample usage data, and researched " +
+      "news/decision-maker signals in one pass -- see the tool-call trace below for exactly what " +
+      "it looked at.",
+    concept_trigger: null,
+    badge: actionBadge(p, status),
+    value: `#${index + 1}`,
+    label: p.headline,
+    sentiment: "watch",
+    description: p.action,
+    detail: p.why,
+    detected_at: new Date().toISOString().slice(0, 10),
+  };
+}
 
 /**
  * The landing screen, and the point of the whole thing.
@@ -12,13 +46,14 @@ type Briefing = Awaited<ReturnType<typeof api.getToday>>;
  * today, in order, with the outreach already drafted -- approve or skip rather than
  * work it out yourself.
  */
-export function TodayView({ onSeeAll }: { onSeeAll: () => void }) {
+export function TodayView({ viewMode, onSeeAll }: { viewMode: ViewMode; onSeeAll: () => void }) {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [actionStatus, setActionStatus] = useState<Record<string, "approved" | "dismissed">>({});
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -44,11 +79,20 @@ export function TodayView({ onSeeAll }: { onSeeAll: () => void }) {
     setTimeout(() => setCopied(null), 1600);
   }
 
+  async function approve(actionId: string) {
+    await api.approveAction(actionId);
+    setActionStatus((prev) => ({ ...prev, [actionId]: "approved" }));
+  }
+
+  async function dismiss(actionId: string) {
+    await api.dismissAction(actionId);
+    setActionStatus((prev) => ({ ...prev, [actionId]: "dismissed" }));
+  }
+
   return (
     <div className="opp-board">
       <header className="opp-topbar">
         <div>
-          <span className="opp-eyebrow">SecurityScorecard · Customer Success</span>
           <h2>Today</h2>
         </div>
         <div className="opp-topbar-meta">
@@ -96,61 +140,26 @@ export function TodayView({ onSeeAll }: { onSeeAll: () => void }) {
 
             <div style={{ display: "grid", gap: 12 }}>
               {briefing.priorities.map((p, i) => (
-                <article
-                  key={i}
-                  style={{
-                    background: "var(--surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 4,
-                    padding: "16px 18px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 6 }}>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "1.1rem",
-                        fontWeight: 600,
-                        color: "var(--amber)",
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.02rem" }}>
-                        {p.customer}
-                      </div>
-                      <div style={{ fontSize: "0.78rem", color: "var(--slate)" }}>{p.headline}</div>
-                    </div>
-                  </div>
-
-                  <p style={{ margin: "0 0 10px", fontSize: "0.87rem", lineHeight: 1.5 }}>{p.why}</p>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      flexWrap: "wrap",
-                      borderTop: "1px solid var(--border)",
-                      paddingTop: 10,
-                    }}
-                  >
-                    <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--petrol)" }}>
-                      → {p.action}
-                    </span>
-                    <button
-                      className="opp-btn"
-                      style={{ fontSize: "0.75rem", padding: "5px 10px" }}
-                      onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                    >
-                      {openIndex === i ? "Hide draft" : "Review draft email"}
-                    </button>
-                  </div>
+                <div key={i}>
+                  <OpportunityTicket
+                    card={toTicketData(p, i, p.action_id ? actionStatus[p.action_id] : undefined)}
+                    domain=""
+                    viewMode={viewMode}
+                    actioned={p.action_id ? actionStatus[p.action_id] === "approved" : false}
+                    onOpen={() => setOpenIndex(openIndex === i ? null : i)}
+                  />
 
                   {openIndex === i && (
-                    <div style={{ marginTop: 12 }}>
+                    <div
+                      style={{
+                        marginTop: -1,
+                        border: "1px solid var(--border)",
+                        borderTop: "none",
+                        borderRadius: "0 0 6px 6px",
+                        padding: "14px 16px 16px",
+                        background: "var(--surface)",
+                      }}
+                    >
                       <div style={{ fontSize: "0.75rem", color: "var(--slate)", marginBottom: 4 }}>
                         Subject
                       </div>
@@ -160,7 +169,12 @@ export function TodayView({ onSeeAll }: { onSeeAll: () => void }) {
                       <div className="opp-drawer-email-body" style={{ fontSize: "0.85rem" }}>
                         {p.email_body}
                       </div>
-                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                      {p.reflection && (
+                        <p style={{ margin: "10px 0 0", fontSize: "0.76rem", color: "var(--petrol)", lineHeight: 1.5 }}>
+                          <strong>Agent's own check before queuing:</strong> {p.reflection}
+                        </p>
+                      )}
+                      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                         <button
                           className="opp-btn opp-btn-primary"
                           style={{ fontSize: "0.75rem", padding: "6px 12px" }}
@@ -168,10 +182,28 @@ export function TodayView({ onSeeAll }: { onSeeAll: () => void }) {
                         >
                           {copied === i ? "Copied" : "Copy email"}
                         </button>
+                        {p.action_id && !actionStatus[p.action_id] && (
+                          <>
+                            <button
+                              className="opp-btn"
+                              style={{ fontSize: "0.75rem", padding: "6px 12px" }}
+                              onClick={() => approve(p.action_id!)}
+                            >
+                              Approve & send
+                            </button>
+                            <button
+                              className="opp-btn"
+                              style={{ fontSize: "0.75rem", padding: "6px 12px" }}
+                              onClick={() => dismiss(p.action_id!)}
+                            >
+                              Dismiss
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
-                </article>
+                </div>
               ))}
             </div>
 

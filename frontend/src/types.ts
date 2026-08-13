@@ -157,3 +157,16 @@ export interface OpportunityBoardResponse {
   chips: AccountChip[];
   cards: OpportunityCard[];
 }
+
+export type ActionStatus = "queued" | "approved" | "dismissed";
+
+export interface QueuedAction {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  subject: string;
+  body: string;
+  reasoning: string;
+  status: ActionStatus;
+  created_at: string;
+}

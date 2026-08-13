@@ -99,6 +99,20 @@ def get_opportunities(customer_id: Optional[str] = None) -> list[dict]:
     return out
 
 
+def queue_outreach(customer_id: str, subject: str, body: str, reasoning: str) -> dict:
+    """The one tool that changes anything -- every other tool only reads. Persists a
+    drafted outreach as a queued action for a CSM to review and send; queuing is a
+    decision, not a delivery. `reasoning` is the agent's own one-sentence check of the
+    draft (specific? grounded in numbers it actually retrieved? free of hype?) made
+    before it committed to the action -- required, not optional, so the reflect step
+    is on the record rather than implied."""
+    customer = storage.get_customer(customer_id)
+    if customer is None:
+        return {"error": f"No customer with id {customer_id}"}
+    action = storage.add_queued_action(customer_id, customer.name, subject, body, reasoning)
+    return {"queued": True, "action_id": action.id, "customer": customer.name}
+
+
 def get_supplier_risk(customer_id: str) -> dict:
     """Detected third-party suppliers for an account, worst-scoring first."""
     customer = storage.get_customer(customer_id)
@@ -174,6 +188,35 @@ TOOLS: dict[str, tuple[Callable[..., Any], dict]] = {
                 "type": "object",
                 "properties": {"customer_id": {"type": "string", "description": "Customer id"}},
                 "required": ["customer_id"],
+            },
+        },
+    ),
+    "queue_outreach": (
+        queue_outreach,
+        {
+            "name": "queue_outreach",
+            "description": (
+                "Queue a drafted outreach email for a CSM to review and send. This is the only tool "
+                "that writes anything -- use it only once you're finished drafting, and only when the "
+                "task actually calls for action (asked to draft/queue/send something, or producing "
+                "today's worklist). Queuing is not sending; a human still approves it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {"type": "string", "description": "Customer id from list_customers"},
+                    "subject": {"type": "string", "description": "Email subject line"},
+                    "body": {"type": "string", "description": "Email body"},
+                    "reasoning": {
+                        "type": "string",
+                        "description": (
+                            "One sentence checking your own draft before committing to it: is it "
+                            "specific, grounded in numbers you actually retrieved, and free of hype? "
+                            "Required."
+                        ),
+                    },
+                },
+                "required": ["customer_id", "subject", "body", "reasoning"],
             },
         },
     ),

@@ -10,6 +10,13 @@ class Customer(BaseModel):
     sponsor: Optional[str] = None
     csm: Optional[str] = None
     notes: Optional[str] = None
+    # Commercial seed data -- stands in for a CRM/billing feed we don't have (same
+    # status as sponsor/csm above). Hand-entered in customers.json, not from any API.
+    last_purchase_product: Optional[str] = None
+    last_purchase_date: Optional[str] = None
+    last_purchase_amount: Optional[float] = None
+    discount_pct: Optional[float] = None
+    renewal_date: Optional[str] = None
 
 
 class CustomerCreate(BaseModel):
@@ -60,6 +67,10 @@ class UsageSummary(BaseModel):
     slots_used: int
     individuals: List[UsageIndividual]
     new_individuals: List[str] = Field(default_factory=list)
+    questionnaires_licensed: int = 0
+    questionnaires_remaining: int = 0
+    questionnaires_expiring_soon: int = 0
+    questionnaires_expiring_in_days: int = 0
 
 
 class DecisionMaker(BaseModel):
@@ -110,6 +121,29 @@ class NewsRecord(BaseModel):
     domain: str
     imported_at: Optional[str] = None
     events: List[NewsEvent] = Field(default_factory=list)
+
+
+ActionStatus = Literal["queued", "approved", "dismissed"]
+
+
+class QueuedAction(BaseModel):
+    """An outreach the agent decided, on its own, was worth drafting and acting on --
+    the one durable, server-side effect of the agent's reasoning. Everything else it
+    does (list_customers, get_customer_detail, ...) only reads; this is the write.
+    A CSM still has to approve before it's actually sent -- the agent decides *what*
+    to do, a human still decides whether to.
+    """
+
+    id: str
+    customer_id: str
+    customer_name: str
+    subject: str
+    body: str
+    # The agent's own one-sentence check of its draft before queuing it -- the
+    # "reflect" step made visible, not just implied.
+    reasoning: str
+    status: ActionStatus = "queued"
+    created_at: str
 
 
 SignalLevel = Literal["upsell", "retention_risk", "neutral"]
