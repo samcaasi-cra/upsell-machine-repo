@@ -13,6 +13,7 @@ import {
 } from "./components/BoardControls";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
+import { SuccessPlanView } from "./components/SuccessPlanView";
 import { TodayView } from "./components/TodayView";
 
 /** Time-of-day greeting, so the board reads like it was opened for you just now. */
@@ -50,7 +51,7 @@ function App() {
   return <Dashboard csmName={csmName} />;
 }
 
-type Tab = "today" | "opportunities" | "ask";
+type Tab = "today" | "opportunities" | "ask" | "success-plan";
 
 function Dashboard({ csmName }: { csmName: string }) {
   const [tab, setTab] = useState<Tab>("today");
@@ -91,6 +92,7 @@ function Dashboard({ csmName }: { csmName: string }) {
               ["today", "1. Today"],
               ["opportunities", "2. Opportunities"],
               ["ask", "3. Ask"],
+              ["success-plan", "4. Joint success plan with the customer"],
             ] as [Tab, string][]).map(([key, label]) => (
               <button
                 key={key}
@@ -114,6 +116,7 @@ function Dashboard({ csmName }: { csmName: string }) {
       {tab === "today" && <TodayView viewMode={viewMode} onSeeAll={() => setTab("opportunities")} />}
       {tab === "opportunities" && <OpportunityBoard viewMode={viewMode} audience={audience} />}
       {tab === "ask" && <AgentChat />}
+      {tab === "success-plan" && <SuccessPlanView />}
     </div>
   );
 }
