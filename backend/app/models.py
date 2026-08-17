@@ -251,3 +251,58 @@ class AccountChip(BaseModel):
 class OpportunityBoardResponse(BaseModel):
     chips: List[AccountChip]
     cards: List[OpportunityCard]
+
+
+class SuccessPlanMetric(BaseModel):
+    """The one number the customer and the CSM agreed to be judged on."""
+
+    label: str
+    baseline: int
+    current: Optional[int] = None
+    target: int
+    due_date: str
+    # Straight-line expectation vs where the score actually is today.
+    on_track: bool
+    progress_pct: int
+
+
+class SuccessPlanChange(BaseModel):
+    """One thing that moved at this customer inside the review window."""
+
+    category: str
+    headline: str
+    detail: str
+    direction: str  # "up" | "down" | "flat"
+    data_source: DataSource
+    source_detail: Optional[str] = None
+
+
+class SuccessPlan(BaseModel):
+    """A joint success plan: what the customer is trying to fix, what both sides agreed
+    to measure, and everything that has moved since.
+
+    The plan itself (objective, supplier counts, agreed target, dates, owner) is the
+    part a CRM owns -- we mock it, tagged data_source="mockup", because we have no
+    Salesforce access. Everything under `changes` is real, drawn from the same sources
+    the board uses.
+    """
+
+    customer_id: str
+    customer_name: str
+    domain: str
+    objective: str
+    scope: str
+    high_risk_suppliers: int
+    critical_suppliers: int
+    metric: SuccessPlanMetric
+    owner: str
+    sponsor: str
+    agreed_on: str
+    next_review: str
+    plan_data_source: DataSource = "mockup"
+    plan_source_detail: str = (
+        "Plan fields (objective, supplier counts, agreed target and dates) are mocked. "
+        "In production these come from the opportunity and success-plan records in Salesforce."
+    )
+    summary: str
+    changes: List[SuccessPlanChange] = Field(default_factory=list)

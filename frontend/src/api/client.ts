@@ -7,6 +7,7 @@ import type {
   NewsRecord,
   OpportunityBoardResponse,
   QueuedAction,
+  SuccessPlan,
 } from "../types";
 
 // Set VITE_API_BASE_URL at build time to point at a deployed backend; falls back to
@@ -130,6 +131,7 @@ export const api = {
       due_today: boolean;
     }>("/research-status"),
   runResearchNow: () => request<{ status: string; detail?: string }>("/research-run-now", { method: "POST" }),
+  listSuccessPlans: () => request<SuccessPlan[]>("/success-plans"),
   autoResearchDecisionMakers: (customerId: string) =>
     request<DecisionMakerRecord>(`/customers/${customerId}/decision-makers/auto-research`, { method: "POST" }),
   autoResearchNews: (customerId: string) =>

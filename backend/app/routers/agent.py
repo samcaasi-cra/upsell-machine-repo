@@ -1,3 +1,5 @@
+import sys
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -22,6 +24,24 @@ def agent_status() -> dict:
     return {"enabled": agent.is_configured(), "provider": agent.active_provider()}
 
 
+def _sdk_missing(exc: ModuleNotFoundError) -> HTTPException:
+    """A missing SDK almost always means the server was started with the wrong Python.
+
+    is_configured() only checks that an API key is set, so the guard above passes and
+    the import fails later with a bare "No module named 'openai'" -- which says nothing
+    about the actual cause. Name the interpreter, because that's the fix.
+    """
+    return HTTPException(
+        status_code=503,
+        detail=(
+            f"The '{exc.name}' package isn't installed in the Python running this server "
+            f"({sys.executable}). This usually means uvicorn was started with the system "
+            f"Python instead of the project venv. Restart with: "
+            f"backend/.venv/Scripts/python -m uvicorn app.main:app --reload --port 8000"
+        ),
+    )
+
+
 @router.get("/today")
 def today(refresh: bool = False) -> dict:
     """The agent's daily worklist. Cached per day unless refresh=true."""
@@ -32,6 +52,8 @@ def today(refresh: bool = False) -> dict:
         )
     try:
         return briefing.build(force=refresh)
+    except ModuleNotFoundError as exc:
+        raise _sdk_missing(exc) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Couldn't build today's briefing: {exc}") from exc
 
@@ -47,6 +69,8 @@ def agent_chat(payload: ChatRequest) -> dict:
         raise HTTPException(status_code=400, detail="No messages provided.")
     try:
         return agent.run([m.model_dump() for m in payload.messages])
+    except ModuleNotFoundError as exc:
+        raise _sdk_missing(exc) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Agent failed: {exc}") from exc
 

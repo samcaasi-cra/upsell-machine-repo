@@ -171,3 +171,41 @@ export interface QueuedAction {
   status: ActionStatus;
   created_at: string;
 }
+
+export interface SuccessPlanMetric {
+  label: string;
+  baseline: number;
+  current: number | null;
+  target: number;
+  due_date: string;
+  on_track: boolean;
+  progress_pct: number;
+}
+
+export interface SuccessPlanChange {
+  category: string;
+  headline: string;
+  detail: string;
+  direction: "up" | "down" | "flat";
+  data_source: DataSource;
+  source_detail: string | null;
+}
+
+export interface SuccessPlan {
+  customer_id: string;
+  customer_name: string;
+  domain: string;
+  objective: string;
+  scope: string;
+  high_risk_suppliers: number;
+  critical_suppliers: number;
+  metric: SuccessPlanMetric;
+  owner: string;
+  sponsor: string;
+  agreed_on: string;
+  next_review: string;
+  plan_data_source: DataSource;
+  plan_source_detail: string;
+  summary: string;
+  changes: SuccessPlanChange[];
+}
