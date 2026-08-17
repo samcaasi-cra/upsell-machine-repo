@@ -403,6 +403,32 @@
   color: var(--slate);
 }
 
+.opp-audience-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--petrol);
+}
+
+.opp-refreshing-note {
+  font-size: 0.72rem;
+  color: var(--slate);
+}
+
+.opp-refresh-error-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--status-critical);
+}
+
+.opp-lanes-intro {
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
 /* ---------- Lanes ---------- */
 .opp-lanes {
   display: grid;
@@ -417,30 +443,41 @@
   min-width: 0;
 }
 .opp-lane-head {
-  padding: 12px 14px 10px;
+  padding: 18px 14px 14px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
 .opp-lane-name {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 8px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 2.76rem;
+  line-height: 1.1;
+  white-space: normal;
   margin: 0;
 }
 .opp-lane-swatch {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
+  width: 16px;
+  height: 16px;
+  margin-top: 10px;
+  border-radius: 3px;
   flex: 0 0 auto;
 }
+.opp-lane-label-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
 .opp-lane-count {
+  display: block;
+  margin-top: 6px;
   font-family: var(--font-mono);
   font-weight: 400;
   color: var(--slate);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 .opp-lane-empty {
   margin: 14px;

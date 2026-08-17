@@ -159,6 +159,7 @@ def _make_card(
     detail: Optional[str] = None,
     source_url: Optional[str] = None,
     source_detail: Optional[str] = None,
+    csm_only: bool = False,
 ) -> OpportunityCard:
     recipient_name, recipient_role = recipient or _pick_recipient(customer, decision_makers, group)
     first_name = recipient_name.split(" ")[0] if recipient_name != "Primary Contact" else "there"
@@ -204,6 +205,7 @@ def _make_card(
         body=body,
         source_url=source_url,
         source_detail=source_detail,
+        csm_only=csm_only,
     )
 
 
@@ -285,7 +287,8 @@ def build_opportunity_cards(
                 "#1",
                 "vs peers",
                 "good",
-                "Tell execs they now outrank every tracked peer on security.",
+                f"Tell {customer.name} executives that they scored highest amongst "
+                "their specific peers on security.",
                 f"{customer.name} now holds the top score in {industry_label}",
                 f"At {score.current_score}, {customer.name} holds the highest SecurityScorecard rating we "
                 f"currently track in {industry_label}{extra}. That's a differentiator worth using externally "
@@ -448,6 +451,7 @@ def build_opportunity_cards(
             f"on {customer.last_purchase_date}.",
             source_detail="Seed data in customers.json (last_purchase_product/date/amount) -- stands in for "
             "a CRM/billing feed we don't have. backend/data/customers.json.",
+            csm_only=True,
         )
 
     # --- Discount: keep it or uplift pricing at renewal, decided from the same usage
@@ -474,6 +478,7 @@ def build_opportunity_cards(
                 source_detail="Discount from customers.json (seed data, stands in for a CRM/billing feed); "
                 "usage strength from the same engagement/slot-capacity thresholds as the triggers above. "
                 "backend/app/services/opportunities.py.",
+                csm_only=True,
             )
         else:
             card(
@@ -492,6 +497,7 @@ def build_opportunity_cards(
                 source_detail="Discount from customers.json (seed data, stands in for a CRM/billing feed); "
                 "usage strength from the same engagement/slot-capacity thresholds as the triggers above. "
                 "backend/app/services/opportunities.py.",
+                csm_only=True,
             )
 
     # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no

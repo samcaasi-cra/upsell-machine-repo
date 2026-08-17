@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import { api, authToken } from "./api/client";
 import { AgentChat } from "./components/AgentChat";
-import { BoardControls, loadFontScale, loadViewMode, useFontScale, type ViewMode } from "./components/BoardControls";
+import {
+  AudienceToggle,
+  BoardControls,
+  loadAudience,
+  loadFontScale,
+  loadViewMode,
+  useFontScale,
+  type Audience,
+  type ViewMode,
+} from "./components/BoardControls";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import { TodayView } from "./components/TodayView";
@@ -47,6 +56,7 @@ function Dashboard({ csmName }: { csmName: string }) {
   const [tab, setTab] = useState<Tab>("today");
   const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
+  const [audience, setAudience] = useState<Audience>(loadAudience);
 
   useFontScale(fontScale);
 
@@ -78,9 +88,9 @@ function Dashboard({ csmName }: { csmName: string }) {
         >
           <div className="board-controls-group" role="group" aria-label="View">
             {([
-              ["today", "Today"],
-              ["opportunities", "Opportunities"],
-              ["ask", "Ask"],
+              ["today", "1. Today"],
+              ["opportunities", "2. Opportunities"],
+              ["ask", "3. Ask"],
             ] as [Tab, string][]).map(([key, label]) => (
               <button
                 key={key}
@@ -94,12 +104,15 @@ function Dashboard({ csmName }: { csmName: string }) {
             ))}
           </div>
 
-          <BoardControls viewMode={viewMode} onViewMode={setViewMode} fontScale={fontScale} onFontScale={setFontScale} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <AudienceToggle audience={audience} onAudience={setAudience} />
+            <BoardControls viewMode={viewMode} onViewMode={setViewMode} fontScale={fontScale} onFontScale={setFontScale} />
+          </div>
         </div>
       </header>
 
       {tab === "today" && <TodayView viewMode={viewMode} onSeeAll={() => setTab("opportunities")} />}
-      {tab === "opportunities" && <OpportunityBoard viewMode={viewMode} />}
+      {tab === "opportunities" && <OpportunityBoard viewMode={viewMode} audience={audience} />}
       {tab === "ask" && <AgentChat />}
     </div>
   );

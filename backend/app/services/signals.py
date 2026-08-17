@@ -106,9 +106,6 @@ def build_signal(
                     f"Sponsor '{customer.sponsor}' no longer appears among identified decision-makers"
                 )
 
-    if not customer.csm:
-        risk_reasons.append("No CSM currently assigned")
-
     if risk_reasons:
         level = "retention_risk"
     elif upsell_reasons:

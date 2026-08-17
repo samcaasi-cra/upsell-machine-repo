@@ -60,8 +60,13 @@ export const api = {
       body: JSON.stringify({ password }),
     }),
   listSignals: () => request<CustomerSummary[]>("/signals"),
-  getOpportunityBoard: (includeConcepts = false) =>
-    request<OpportunityBoardResponse>(`/opportunities${includeConcepts ? "?include_concepts=true" : ""}`),
+  getOpportunityBoard: (includeConcepts = false, audience: "csm" | "customer" = "csm") => {
+    const params = new URLSearchParams();
+    if (includeConcepts) params.set("include_concepts", "true");
+    if (audience === "customer") params.set("audience", "customer");
+    const query = params.toString();
+    return request<OpportunityBoardResponse>(`/opportunities${query ? `?${query}` : ""}`);
+  },
   getOverview: (customerId: string) => request<CustomerOverview>(`/customers/${customerId}/overview`),
   createCustomer: (payload: CustomerCreate) =>
     request<Customer>("/customers", { method: "POST", body: JSON.stringify(payload) }),

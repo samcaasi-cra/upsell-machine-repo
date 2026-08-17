@@ -35,6 +35,14 @@ export function ConceptIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function MockupIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" {...props}>
+      <path d="M5 0.7 9.3 5 5 9.3 0.7 5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function InfoIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>

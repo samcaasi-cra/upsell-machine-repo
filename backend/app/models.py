@@ -187,7 +187,11 @@ Sentiment = Literal["good", "watch", "info"]
 # "live" is a direct SSC API read. "researched" is also real, but assembled by us from
 # public sources (news search, decision-maker research) rather than returned by an API,
 # so it carries more uncertainty and is worth distinguishing on the card.
-DataSource = Literal["live", "researched", "sample", "concept"]
+# "mockup"  = a specific new source we haven't integrated yet (email, Salesforce,
+#             tickets, surveys), shown as one illustrative example per source. Unlike
+#             "concept" it's visible by default -- it's a real addition to the board,
+#             just backed by invented data until the integration exists.
+DataSource = Literal["live", "researched", "sample", "concept", "mockup"]
 
 
 class RecipientOption(BaseModel):
@@ -207,6 +211,10 @@ class OpportunityCard(BaseModel):
     data_source: DataSource = "live"
     # For concept cards: which trigger from the brief this illustrates, e.g. "#9".
     concept_trigger: Optional[str] = None
+    # True for cards a customer shouldn't see in the customer-facing view (pricing,
+    # discounts, anything framed internally as an upsell lever). Filtered server-side
+    # by the /opportunities `audience` param, not just hidden in the UI.
+    csm_only: bool = False
     badge: Optional[str] = None
     description: str
     # Short (<=2 line) active-voice instruction shown on the card face. `detail` carries
