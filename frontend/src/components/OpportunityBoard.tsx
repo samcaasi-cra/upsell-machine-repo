@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import "./OpportunityBoard.css";
 import { api } from "../api/client";
-import type { ViewMode } from "./BoardControls";
+import type { Audience, ViewMode } from "./BoardControls";
 import { CustomerPicker } from "./CustomerPicker";
 import { EmailDrawer } from "./EmailDrawer";
-import { ExternalLinkIcon, LiveIcon, ResearchedIcon, SampleIcon } from "./icons";
+import { ExternalLinkIcon, LiveIcon, MockupIcon, ResearchedIcon, SampleIcon } from "./icons";
 import { InfoPopover } from "./InfoPopover";
 import { OpportunityTicket } from "./OpportunityTicket";
 import type { OpportunityBoardResponse, OpportunityGroup } from "../types";
@@ -21,8 +21,10 @@ export const GROUPS: { key: OpportunityGroup; label: string; blurb: string }[] =
   },
   {
     key: "adoption",
-    label: "Usage",
-    blurb: "Platform usage telling you the account is ready for more — deepen or expand it now.",
+    label: "Customer experience",
+    blurb:
+      "Platform usage plus customer-relationship signals — email, CRM, tickets, surveys — telling you the " +
+      "account is ready for more.",
   },
   {
     key: "expansion",
@@ -36,9 +38,13 @@ export const GROUPS: { key: OpportunityGroup; label: string; blurb: string }[] =
   },
 ];
 
-export function OpportunityBoard({ viewMode }: { viewMode: ViewMode }) {
+export function OpportunityBoard({ viewMode, audience }: { viewMode: ViewMode; audience: Audience }) {
   const [board, setBoard] = useState<OpportunityBoardResponse | null>(null);
+  // Only gates the very first load -- once we have data, a refetch (audience/concepts
+  // toggle, the research-poll interval) happens quietly in the background instead of
+  // blanking the board back to a loading placeholder.
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openCardId, setOpenCardId] = useState<string | null>(null);
@@ -47,12 +53,19 @@ export function OpportunityBoard({ viewMode }: { viewMode: ViewMode }) {
   const [showConcepts, setShowConcepts] = useState(false);
 
   const loadBoard = useCallback(() => {
+    setRefreshing(true);
     api
-      .getOpportunityBoard(showConcepts)
-      .then(setBoard)
+      .getOpportunityBoard(showConcepts, audience)
+      .then((data) => {
+        setBoard(data);
+        setError(null);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setLoading(false));
-  }, [showConcepts]);
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
+  }, [showConcepts, audience]);
 
   useEffect(() => {
     loadBoard();
@@ -91,7 +104,7 @@ export function OpportunityBoard({ viewMode }: { viewMode: ViewMode }) {
   }
 
   if (loading) return <p style={{ color: "var(--text-secondary)" }}>Loading opportunities…</p>;
-  if (error) return <p style={{ color: "var(--status-critical)" }}>Failed to load: {error}</p>;
+  if (error && !board) return <p style={{ color: "var(--status-critical)" }}>Failed to load: {error}</p>;
   if (!board) return null;
 
   const visibleCards = selectedIds.size === 0 ? board.cards : board.cards.filter((c) => selectedIds.has(c.customer_id));
@@ -115,6 +128,11 @@ export function OpportunityBoard({ viewMode }: { viewMode: ViewMode }) {
           </a>
         </div>
         <div className="opp-topbar-controls">
+          {refreshing && <span className="opp-refreshing-note">Refreshing…</span>}
+          {error && <span className="opp-refresh-error-note">Couldn't refresh: {error}</span>}
+          {audience === "customer" && (
+            <span className="opp-audience-note">Viewing as customer — commercial signals hidden</span>
+          )}
           {research && (
             <span className="opp-research-status">
               {research.running
@@ -151,21 +169,29 @@ export function OpportunityBoard({ viewMode }: { viewMode: ViewMode }) {
             Platform usage (logins, slots) — placeholder until the usage feed is connected.
           </InfoPopover>
         </span>
+        <span className="opp-legend-item">
+          <MockupIcon style={{ color: "var(--petrol)" }} />
+          <InfoPopover label="Click for more info">
+            Illustrative example of a source we haven't integrated yet — email, CRM, tickets, surveys.
+          </InfoPopover>
+        </span>
         <label className="opp-concept-toggle" title="Show illustrative cards for triggers from the brief that aren't built yet">
           <input
             type="checkbox"
             checked={showConcepts}
-            onChange={(e) => {
-              setShowConcepts(e.target.checked);
-              setLoading(true);
-            }}
+            onChange={(e) => setShowConcepts(e.target.checked)}
           />
           Show unbuilt triggers as concepts
         </label>
       </div>
 
+      <p className="opp-lanes-intro">
+        You have {totalCount} engagement opportunit{totalCount === 1 ? "y" : "ies"} across {accountsWithOpps.size}{" "}
+        account{accountsWithOpps.size === 1 ? "" : "s"} sorted below in the four types of upsell alert.
+      </p>
+
       <main className="opp-lanes" aria-label="Opportunity feed">
-        {GROUPS.map((g) => {
+        {GROUPS.map((g, i) => {
           let items = visibleCards.filter((c) => c.group === g.key);
           items = items
             .slice()
@@ -180,10 +206,14 @@ export function OpportunityBoard({ viewMode }: { viewMode: ViewMode }) {
               <div className="opp-lane-head">
                 <div className="opp-lane-name">
                   <span className="opp-lane-swatch" aria-hidden="true" />
-                  {g.label}{" "}
-                  <span className="opp-lane-count">({items.length})</span>
+                  <span className="opp-lane-label-text">
+                    {i + 1}. {g.label}
+                  </span>
                   <InfoPopover label={`What counts as ${g.label}`}>{g.blurb}</InfoPopover>
                 </div>
+                <span className="opp-lane-count">
+                  {items.length} card{items.length === 1 ? "" : "s"}
+                </span>
               </div>
               <div className="opp-lane-body">
                 {items.length === 0 ? (

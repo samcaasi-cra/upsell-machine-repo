@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter
 
 from .. import storage
@@ -5,6 +7,7 @@ from ..models import AccountChip, NewsRecord, OpportunityBoardResponse
 from ..services import signals
 from ..services.aggregation import gather_all_customer_data
 from ..services.concept_triggers import build_concept_cards
+from ..services.mock_signals import build_mock_signal_cards
 from ..services.opportunities import build_opportunity_cards, grade_sentiment
 
 router = APIRouter(tags=["opportunities"])
@@ -45,9 +48,14 @@ def _build_person_customer_map(entries) -> dict[str, list[str]]:
 
 
 @router.get("/opportunities", response_model=OpportunityBoardResponse)
-def get_opportunity_board(include_concepts: bool = False) -> OpportunityBoardResponse:
+def get_opportunity_board(
+    include_concepts: bool = False, audience: Literal["csm", "customer"] = "csm"
+) -> OpportunityBoardResponse:
     """`include_concepts` adds illustrative cards for triggers from the brief that
-    aren't built yet. Off by default so the honest view is the default."""
+    aren't built yet. Off by default so the honest view is the default.
+
+    `audience="customer"` drops cards marked `csm_only` (pricing/discount info a
+    customer shouldn't see) -- a demo stand-in for real account-permission gating."""
     entries = gather_all_customer_data()
     industry_stats_map = signals.industry_stats([(c.id, s.industry, s.current_score) for c, s, _, _ in entries])
     industry_declines = _build_industry_declines(entries)
@@ -68,10 +76,13 @@ def get_opportunity_board(include_concepts: bool = False) -> OpportunityBoardRes
             industry_declines,
             person_customer_map,
         )
+        cards = cards + build_mock_signal_cards(customer, roster_index=roster_index)
         if include_concepts:
             cards = cards + build_concept_cards(
                 customer, score, dm_record, roster_index=roster_index, roster_size=len(entries)
             )
+        if audience == "customer":
+            cards = [c for c in cards if not c.csm_only]
         all_cards.extend(cards)
         cards_by_customer[customer.id] = len(cards)
         chips.append(

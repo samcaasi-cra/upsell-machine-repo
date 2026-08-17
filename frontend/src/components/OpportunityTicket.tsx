@@ -1,6 +1,6 @@
 import { CustomerLogo } from "./CustomerLogo";
 import type { ViewMode } from "./BoardControls";
-import { LiveIcon, ResearchedIcon, SampleIcon } from "./icons";
+import { LiveIcon, MockupIcon, ResearchedIcon, SampleIcon } from "./icons";
 import { InfoPopover } from "./InfoPopover";
 import type { DataSource, Sentiment } from "../types";
 
@@ -112,6 +112,16 @@ export function OpportunityTicket({
               <span className="opp-source-pop-head">
                 Not built — concept{card.concept_trigger ? ` · Trigger ${card.concept_trigger}` : ""}
               </span>
+              {card.source_detail}
+            </InfoPopover>
+          )}
+          {card.data_source === "mockup" && (
+            <InfoPopover
+              label="Mockup — source not yet integrated"
+              align="right"
+              icon={<MockupIcon style={{ color: "var(--petrol)" }} />}
+            >
+              <span className="opp-source-pop-head">Mockup — not yet integrated</span>
               {card.source_detail}
             </InfoPopover>
           )}
