@@ -16,25 +16,25 @@ const SSC_PORTFOLIO_URL =
 export const GROUPS: { key: OpportunityGroup; label: string; blurb: string }[] = [
   {
     key: "proof",
-    label: "Own Cyber Posture",
-    blurb: "Evidence the customer's own security is already paying off — cite it before they ask.",
+    label: "Change in score",
+    blurb: "Evidence the customer's own security score is moving — cite it before they ask.",
   },
   {
     key: "adoption",
-    label: "Customer experience",
-    blurb:
-      "Platform usage plus customer-relationship signals — email, CRM, tickets, surveys — telling you the " +
-      "account is ready for more.",
+    label: "Change in Usage",
+    blurb: "Platform usage metrics — slots, logins, questionnaires — telling you the account is ready for more.",
   },
   {
     key: "expansion",
-    label: "Monitoring Opportunities",
-    blurb: "Third-party and sector risk, plus new people worth bringing into monitoring or engagement.",
+    label: "Change in Risk",
+    blurb: "Third-party supplier and sector risk worth escalating monitoring for.",
   },
   {
     key: "engagement",
-    label: "Growing attack surface",
-    blurb: "Company news that expands the customer's own footprint — acquisitions, new offices, new products.",
+    label: "Change at Customer",
+    blurb:
+      "Everything happening at the customer's own organisation — new people, company news, and " +
+      "relationship signals like email, CRM, tickets, and surveys.",
   },
 ];
 

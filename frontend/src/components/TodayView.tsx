@@ -94,6 +94,9 @@ export function TodayView({ viewMode, onSeeAll }: { viewMode: ViewMode; onSeeAll
       <header className="opp-topbar">
         <div>
           <h2>Today</h2>
+          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--slate)" }}>
+            The signals best to act on today, hand-picked by the agent.
+          </p>
         </div>
         <div className="opp-topbar-meta">
           {briefing?.pseudonymised && (

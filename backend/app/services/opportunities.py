@@ -213,12 +213,12 @@ _NEWS_EVENT_META = {
     "acquisition": {
         "value": "M&A",
         "label": "acquisition",
-        "cta": "Congratulate them and offer to extend coverage to the acquisition.",
+        "cta": "Recommend more monitoring slots — the acquisition expands their supplier footprint.",
         "subject_prefix": "Congratulations on the news",
         "advice": (
-            "Acquisitions often bring new suppliers and systems into scope before due diligence is "
-            "complete — worth extending monitoring coverage to the acquired company now, ahead of "
-            "integration."
+            "Acquisitions typically multiply the supplier portfolio several-fold before due diligence is "
+            "complete — worth recommending additional monitoring slots now, ahead of integration, rather "
+            "than waiting for the licensed cap to become a blocker."
         ),
     },
     "new_office": {
@@ -252,10 +252,22 @@ def build_opportunity_cards(
     industry_stats_map: dict[str, dict],
     news: Optional[NewsRecord] = None,
     industry_declines: Optional[dict[str, list[tuple[str, int, str]]]] = None,
-    person_customer_map: Optional[dict[str, list[str]]] = None,
+    person_customer_map: Optional[dict[str, list[tuple[str, str]]]] = None,
 ) -> list[OpportunityCard]:
     cards: list[OpportunityCard] = []
     today_iso = date.today().isoformat()
+
+    # Computed early (not just where it's used below) so both the score-up-plus-risk
+    # combo card and the standalone supplier-risk card can draw on the same lookup.
+    vendors = ssc_client.get_third_party_vendors(customer.domain, limit=50)
+    at_risk_vendors = [
+        v
+        for v in vendors
+        if isinstance(v.get("score"), int)
+        and v["score"] < _SUPPLIER_RISK_SCORE_THRESHOLD
+        and not _is_ignored_vendor(v.get("company"))
+    ]
+    worst_vendor = min(at_risk_vendors, key=lambda v: v["score"]) if at_risk_vendors else None
 
     def card(group, value, label, sentiment, description, subject, body_intro, detected_at=today_iso, **kw):
         cards.append(
@@ -324,6 +336,30 @@ def build_opportunity_cards(
             "backend/app/services/ssc_client.py:127-209 (get_score_history(), build_score_summary()).",
         )
 
+    # --- Score up a lot, and there's residual supplier risk to pivot to: celebrate the
+    # score, then use the at-risk supplier as the reason to add monitoring slots. ---
+    if score_up_delta and worst_vendor and score.current_score is not None:
+        vendor_name = worst_vendor.get("company") or worst_vendor.get("domain", "a detected supplier")
+        card(
+            "proof",
+            f"+{score_up_delta}",
+            "score up, risk nearby",
+            "good",
+            "Celebrate the score gain, then flag residual supplier risk to justify more slots.",
+            f"Congratulations on the {score_up_delta}-point gain — plus one thing to flag",
+            f"{customer.name}'s SecurityScorecard rating rose {score_up_delta} points in the last "
+            f"{score_up_window}, now at {score.current_score} — worth celebrating. While reviewing the "
+            f"portfolio, {vendor_name} showed up as an at-risk supplier (scoring {worst_vendor['score']}). "
+            "Good moment to pair the congratulations with a conversation about adding monitoring slots to "
+            "cover the residual third-party risk.",
+            detail=f"Score rose {score_up_delta} points in the last {score_up_window}, but {vendor_name} "
+            f"({worst_vendor['score']}) is a residual at-risk supplier — pair the good news with a slots "
+            "conversation.",
+            source_detail="Combines the same score-history flag as the score-up card above with the "
+            "vendor-detection lookup used by the supplier-at-risk card. "
+            "backend/app/services/ssc_client.py:106-209; backend/app/services/opportunities.py.",
+        )
+
     # --- Adoption signals ---
     if usage.licensed_slots > 0:
         pct = round(usage.slots_used / usage.licensed_slots * 100)
@@ -333,7 +369,7 @@ def build_opportunity_cards(
                 f"{pct}%",
                 "vendor slots used",
                 "watch",
-                "Flag rising slot usage before it hits the licensed cap.",
+                "Send them an automated quote to upgrade before they hit the cap.",
                 f"{usage.slots_used} of {usage.licensed_slots} vendor slots now in use ({pct}%)",
                 f"{customer.name} is now using {usage.slots_used} of {usage.licensed_slots} licensed vendor "
                 f"slots ({pct}% utilisation). Worth a short conversation about headroom before you reach the "
@@ -347,6 +383,48 @@ def build_opportunity_cards(
 
     total_visits = sum(i.visits_7d for i in usage.individuals)
     engagement_score = usage.slots_filled_7d * 3 + usage.reports_generated_7d + total_visits
+
+    # --- No platform activity at all in the last 7 days -- past "quiet", worth a human
+    # touch rather than another email. Same zero-activity condition signals.py already
+    # uses for its risk reason, just not surfaced as a card until now. ---
+    no_activity = usage.slots_filled_7d == 0 and usage.reports_generated_7d == 0 and total_visits == 0
+    if no_activity:
+        card(
+            "adoption",
+            "0",
+            "no activity in 7 days",
+            "watch",
+            "Invite them to an Executive Business Review.",
+            "Checking in — haven't seen you in the platform lately",
+            f"We haven't seen any platform activity from {customer.name} in the last 7 days — no slots "
+            "filled, no reports, no logins. Worth inviting the team to an Executive Business Review to "
+            "re-anchor on value before it becomes a renewal risk.",
+            data_source="sample",
+            detail="No slots filled, reports generated, or logins in the last 7 days.",
+            source_detail="Deterministic placeholder generator, seeded per customer per day — no real "
+            "usage feed exists yet. backend/app/services/mock_usage.py:18 (build_usage_summary()).",
+        )
+    # --- Usage trending down significantly (but not fully dark) -- same delta
+    # thresholds signals.py already uses for its risk reasons. Distinct from the
+    # zero-activity case above so the two don't both fire for the same account. ---
+    elif usage.slots_delta_7d < -2 or usage.reports_delta_7d < -3:
+        card(
+            "adoption",
+            f"{usage.slots_delta_7d}",
+            "usage trending down",
+            "watch",
+            "Invite them to an Executive Business Review.",
+            "Checking in on your recent platform usage",
+            f"{customer.name}'s platform usage has dropped notably this week (slots filled "
+            f"{usage.slots_delta_7d:+d}, reports {usage.reports_delta_7d:+d} vs. the prior week). Worth "
+            "inviting the team to an Executive Business Review before the trend continues.",
+            data_source="sample",
+            detail=f"Slots filled {usage.slots_delta_7d:+d}, reports generated {usage.reports_delta_7d:+d} "
+            "vs. the prior week.",
+            source_detail="Deterministic placeholder generator, seeded per customer per day — no real "
+            "usage feed exists yet. backend/app/services/mock_usage.py:18 (build_usage_summary()).",
+        )
+
     if engagement_score >= _ENGAGEMENT_THRESHOLD and usage.individuals:
         avg_visits = total_visits / len(usage.individuals)
         multiplier = round(avg_visits / _BENCHMARK_VISITS_PER_USER, 1)
@@ -386,6 +464,28 @@ def build_opportunity_cards(
             source_detail="Deterministic placeholder generator, compared against the per-customer "
             "seen-individuals cache. backend/app/services/mock_usage.py:18 (build_usage_summary()); "
             f"backend/data/usage_individuals/{customer.id}.json.",
+        )
+
+    # --- Sent a high volume of questionnaires this cycle -- past the point where
+    # managing responses by hand is realistic, worth pitching MAX. ---
+    questionnaires_sent = usage.questionnaires_licensed - usage.questionnaires_remaining
+    if questionnaires_sent > 10:
+        card(
+            "adoption",
+            str(questionnaires_sent),
+            "questionnaires sent",
+            "good",
+            "Recommend Titan MAX to manage the response volume.",
+            "Managing your questionnaire response volume",
+            f"{customer.name} has sent {questionnaires_sent} questionnaires this cycle — a volume where "
+            "manually tracking responses starts to strain. Worth a conversation about Titan MAX, which is "
+            "built to manage response volume at this scale.",
+            data_source="sample",
+            detail=f"Sent {questionnaires_sent} questionnaires this cycle — high enough volume to justify "
+            "a Titan MAX conversation.",
+            source_detail="Deterministic placeholder generator, seeded per customer per day — stands in for "
+            "the SecurityScorecard Questionnaires (Atlas) API, which isn't integrated yet. "
+            "backend/app/services/mock_usage.py:18 (build_usage_summary()).",
         )
 
     # --- Questionnaire capacity running low ---
@@ -500,31 +600,22 @@ def build_opportunity_cards(
                 csm_only=True,
             )
 
-    # --- Expansion: supplier breach anticipated (read-only vendor-detection lookup, no
+    # --- Risk: supplier breach anticipated (read-only vendor-detection lookup, no
     # portfolio membership required -- the endpoint returns each vendor's own score) ---
-    vendors = ssc_client.get_third_party_vendors(customer.domain, limit=50)
-    at_risk_vendors = [
-        v
-        for v in vendors
-        if isinstance(v.get("score"), int)
-        and v["score"] < _SUPPLIER_RISK_SCORE_THRESHOLD
-        and not _is_ignored_vendor(v.get("company"))
-    ]
-    if at_risk_vendors:
-        worst = min(at_risk_vendors, key=lambda v: v["score"])
-        vendor_name = worst.get("company") or worst.get("domain", "A detected supplier")
+    if worst_vendor:
+        vendor_name = worst_vendor.get("company") or worst_vendor.get("domain", "A detected supplier")
         card(
             "expansion",
-            str(worst["score"]),
+            str(worst_vendor["score"]),
             "supplier at risk",
             "watch",
-            f"Warn them: {vendor_name} is showing elevated risk.",
+            f"Increase monitoring — {vendor_name} is showing elevated risk.",
             "A supplier in your third-party footprint is showing elevated risk",
             f"{vendor_name}, a supplier detected in {customer.name}'s third-party footprint, is currently "
-            f"scoring {worst['score']} on SecurityScorecard — in the at-risk range. Worth flagging and "
+            f"scoring {worst_vendor['score']} on SecurityScorecard — in the at-risk range. Worth flagging and "
             "reviewing exposure before a wider issue develops.",
-            detail=f"{vendor_name} ({worst.get('domain', 'unknown domain')}), a supplier detected in "
-            f"{customer.name}'s third-party footprint, is currently scoring {worst['score']} — in the "
+            detail=f"{vendor_name} ({worst_vendor.get('domain', 'unknown domain')}), a supplier detected in "
+            f"{customer.name}'s third-party footprint, is currently scoring {worst_vendor['score']} — in the "
             "at-risk range.",
             source_detail="SecurityScorecard API — GET /vendor-detection/{domain}/third-party, limit=50, "
             "filtered against a denylist of infrastructure/OSS false-positives. "
@@ -587,14 +678,14 @@ def build_opportunity_cards(
         except ValueError:
             detected_at = today_iso
 
-        # New decision-makers live in the "Monitoring Opportunities" lane (group="expansion")
-        # -- each is an opportunity to bring a new person into engagement/monitoring, same
-        # family as the supplier- and peer-risk cards above.
+        # New decision-makers live in the "Change at Customer" lane (group="engagement")
+        # -- each is a personnel change at the customer's own organisation, same family
+        # as the news cards below rather than the third-party risk cards above.
         new_ciso = [p for p in decision_makers.people if p.status == "new" and p.is_ciso_or_biso]
         for p in new_ciso:
             role = "BISO" if "business information security" in p.title.lower() else "CISO"
             card(
-                "expansion",
+                "engagement",
                 "NEW",
                 f"{role} appointed",
                 "info",
@@ -617,7 +708,7 @@ def build_opportunity_cards(
             count = len(new_others)
             for p in new_others:
                 card(
-                    "expansion",
+                    "engagement",
                     str(count),
                     "new stakeholders",
                     "good",
@@ -636,8 +727,8 @@ def build_opportunity_cards(
                 )
 
         # --- Alumni joins another customer (cross-referenced against our own accumulated
-        # decision-maker research, no LinkedIn Sales Navigator needed) -- also a "Monitoring
-        # Opportunities" card, since it's a new point of contact to bring into engagement. ---
+        # decision-maker research, no LinkedIn Sales Navigator needed) -- a "Change at
+        # Customer" card, since it's a personnel change at the customer's own org. ---
         if person_customer_map:
             for p in decision_makers.people:
                 if p.status != "new":
@@ -645,29 +736,56 @@ def build_opportunity_cards(
                 keys = {p.name.strip().lower()}
                 if p.linkedin_url:
                     keys.add(p.linkedin_url.strip().lower())
-                other_customers = []
+                other_customers: list[tuple[str, str]] = []
                 for key in keys:
-                    for n in person_customer_map.get(key, []):
-                        if n != customer.name and n not in other_customers:
-                            other_customers.append(n)
+                    for entry in person_customer_map.get(key, []):
+                        if entry[0] != customer.name and entry not in other_customers:
+                            other_customers.append(entry)
                 if not other_customers:
                     continue
+                prior_name, prior_product = other_customers[0]
+                # A prior employer on Titan MAX is worth a specific pitch -- this person
+                # already knows the product, not just the SecurityScorecard relationship.
+                came_from_max = "max" in prior_product.lower()
+                if came_from_max:
+                    cta = f"Reconnect — they used Titan MAX at {prior_name}, pitch it here too."
+                    subject = f"Great to reconnect via {prior_name}"
+                    body_intro = (
+                        f"Good to see a familiar face — you were previously part of the security team at "
+                        f"{prior_name}, where you used Titan MAX, and we're glad to have you at "
+                        f"{customer.name} now. Happy to pick up where we left off, including what Titan MAX "
+                        "could do for your new team here."
+                    )
+                    detail = (
+                        f"{p.name} ({p.title}) was previously tracked at {prior_name} on Titan MAX — now "
+                        f"identified at {customer.name}, a candidate to pitch MAX to directly."
+                    )
+                else:
+                    cta = f"Reconnect — they know you from {prior_name}."
+                    subject = f"Great to reconnect via {prior_name}"
+                    body_intro = (
+                        f"Good to see a familiar face — you were previously part of the security team at "
+                        f"{prior_name}, and we're glad to have you at {customer.name} now. Happy to pick up "
+                        "where we left off with a quick introduction to your new team's coverage."
+                    )
+                    detail = (
+                        f"{p.name} ({p.title}) was previously tracked at {prior_name} — now identified at "
+                        f"{customer.name}."
+                    )
                 card(
-                    "expansion",
+                    "engagement",
                     "ALUMNI",
                     "familiar face",
                     "good",
-                    f"Reconnect — they know you from {other_customers[0]}.",
-                    f"Great to reconnect via {other_customers[0]}",
-                    f"Good to see a familiar face — you were previously part of the security team at "
-                    f"{other_customers[0]}, and we're glad to have you at {customer.name} now. Happy to "
-                    "pick up where we left off with a quick introduction to your new team's coverage.",
+                    cta,
+                    subject,
+                    body_intro,
                     detected_at=detected_at,
                     recipient=(p.name, p.title),
-                    detail=f"{p.name} ({p.title}) was previously tracked at {other_customers[0]} — now identified "
-                    f"at {customer.name}.",
+                    detail=detail,
                     source_detail="Matches a newly-identified person's name (or LinkedIn URL) against every "
-                    "other tracked customer's cached decision-maker list. "
+                    "other tracked customer's cached decision-maker list, plus that customer's "
+                    "last_purchase_product (seed data) to spot a prior Titan MAX user. "
                     "backend/app/services/opportunities.py (person_customer_map diff, alumni block).",
                     data_source="researched",
                 )

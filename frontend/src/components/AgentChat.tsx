@@ -69,6 +69,9 @@ export function AgentChat() {
       <header className="opp-topbar">
         <div>
           <h2>Ask</h2>
+          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--slate)" }}>
+            Ask Gaia about other growth opportunities
+          </p>
         </div>
         <div className="opp-topbar-meta">
           <span className="opp-illustrative-badge">

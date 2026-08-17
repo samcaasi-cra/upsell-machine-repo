@@ -11,6 +11,7 @@ import {
   type Audience,
   type ViewMode,
 } from "./components/BoardControls";
+import { JointSuccessPlanView } from "./components/JointSuccessPlanView";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import { TodayView } from "./components/TodayView";
@@ -50,10 +51,10 @@ function App() {
   return <Dashboard csmName={csmName} />;
 }
 
-type Tab = "today" | "opportunities" | "ask";
+type Tab = "opportunities" | "today" | "ask" | "joint_success_plan";
 
 function Dashboard({ csmName }: { csmName: string }) {
-  const [tab, setTab] = useState<Tab>("today");
+  const [tab, setTab] = useState<Tab>("opportunities");
   const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
   const [audience, setAudience] = useState<Audience>(loadAudience);
@@ -88,9 +89,10 @@ function Dashboard({ csmName }: { csmName: string }) {
         >
           <div className="board-controls-group" role="group" aria-label="View">
             {([
-              ["today", "1. Today"],
-              ["opportunities", "2. Opportunities"],
+              ["opportunities", "1. All Growth Signals"],
+              ["today", "2. Today"],
               ["ask", "3. Ask"],
+              ["joint_success_plan", "4. Joint Success Plan"],
             ] as [Tab, string][]).map(([key, label]) => (
               <button
                 key={key}
@@ -111,9 +113,14 @@ function Dashboard({ csmName }: { csmName: string }) {
         </div>
       </header>
 
-      {tab === "today" && <TodayView viewMode={viewMode} onSeeAll={() => setTab("opportunities")} />}
       {tab === "opportunities" && <OpportunityBoard viewMode={viewMode} audience={audience} />}
-      {tab === "ask" && <AgentChat />}
+      {tab === "today" && <TodayView viewMode={viewMode} onSeeAll={() => setTab("opportunities")} />}
+      {/* Always mounted (just hidden) rather than conditionally rendered, so the
+          conversation survives switching to another tab and back. */}
+      <div style={{ display: tab === "ask" ? "block" : "none" }}>
+        <AgentChat />
+      </div>
+      {tab === "joint_success_plan" && <JointSuccessPlanView />}
     </div>
   );
 }

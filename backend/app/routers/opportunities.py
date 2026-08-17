@@ -30,20 +30,21 @@ def _build_industry_declines(entries) -> dict[str, list[tuple[str, int, str]]]:
     return declines
 
 
-def _build_person_customer_map(entries) -> dict[str, list[str]]:
-    """identity (lowercased name, and linkedin_url when known) -> customer names
-    currently tracking that person -- used to detect an alumni move across our own
-    customers (#19). Indexed under both keys since not every record has a LinkedIn
-    URL captured, so a name-only record at one company must still match a
+def _build_person_customer_map(entries) -> dict[str, list[tuple[str, str]]]:
+    """identity (lowercased name, and linkedin_url when known) -> (customer name,
+    last_purchase_product) for customers currently tracking that person -- used to
+    detect an alumni move across our own customers (#19), and whether they're coming
+    from a Titan MAX account (#8). Indexed under both keys since not every record has
+    a LinkedIn URL captured, so a name-only record at one company must still match a
     LinkedIn-tagged record for the same person at another."""
-    index: dict[str, list[str]] = {}
+    index: dict[str, list[tuple[str, str]]] = {}
     for customer, _, _, dm_record in entries:
         for p in dm_record.people:
             keys = {p.name.strip().lower()}
             if p.linkedin_url:
                 keys.add(p.linkedin_url.strip().lower())
             for key in keys:
-                index.setdefault(key, []).append(customer.name)
+                index.setdefault(key, []).append((customer.name, customer.last_purchase_product or ""))
     return index
 
 

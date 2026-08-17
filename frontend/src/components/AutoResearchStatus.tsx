@@ -57,20 +57,17 @@ export function AutoResearchStatus({
 
 function Spinner() {
   return (
-    <>
-      <style>{`@keyframes opp-spin { to { transform: rotate(360deg) } }`}</style>
-      <span
-        style={{
-          width: 12,
-          height: 12,
-          border: "2px solid var(--border)",
-          borderTopColor: "var(--series-1)",
-          borderRadius: "50%",
-          display: "inline-block",
-          animation: "opp-spin 0.8s linear infinite",
-          flexShrink: 0,
-        }}
-      />
-    </>
+    <span
+      style={{
+        width: 12,
+        height: 12,
+        border: "2px solid var(--border)",
+        borderTopColor: "var(--series-1)",
+        borderRadius: "50%",
+        display: "inline-block",
+        animation: "opp-spin 0.8s linear infinite",
+        flexShrink: 0,
+      }}
+    />
   );
 }

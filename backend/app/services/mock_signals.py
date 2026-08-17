@@ -2,7 +2,8 @@
 email correspondence, Salesforce, support tickets, and customer surveys.
 
 Unlike `concept_triggers.py`, these are visible by default -- they're a real addition
-to the board (the "Customer experience" lane), just backed by invented data until each
+to the board (the "Change at Customer" lane -- these are all relationship/organisation
+signals, not raw platform-usage metrics), just backed by invented data until each
 integration exists. Every card is tagged data_source="mockup" and carries a badge
 naming the source, so it can never be mistaken for a live signal.
 
@@ -33,7 +34,7 @@ def _card(customer: Customer, source: str, days_ago: int, **fields) -> Opportuni
     signer = customer.csm or "The SecurityScorecard Customer Success Team"
     return OpportunityCard(
         card_id=_card_id(customer.id, source),
-        group="adoption",
+        group="engagement",
         customer_id=customer.id,
         customer_name=customer.name,
         data_source="mockup",
@@ -97,7 +98,7 @@ def _support_ticket_card(customer: Customer) -> OpportunityCard:
         value="3",
         label="support tickets",
         sentiment="info",
-        description="Follow up — repeated tickets suggest they've outgrown their current tier.",
+        description="Ensure they receive a positive resolution — repeated tickets suggest friction.",
         subject="Following up on your recent support tickets",
         body_intro="Noticed a few recent tickets asking about single sign-on — that's usually a sign a "
         "team's ready to move up a tier, happy to talk through it.",

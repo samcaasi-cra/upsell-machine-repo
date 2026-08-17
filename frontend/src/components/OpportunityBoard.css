@@ -4,6 +4,14 @@
    pulled from securityscorecard.com's own stylesheet. Scoped under .opp-board so it
    doesn't leak into the rest of the app's design system. */
 
+/* Shared by every small loading spinner in the app (AgentChat, AutoResearchStatus) --
+   defined once here, since this stylesheet is the one thing all of them import. */
+@keyframes opp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .opp-board {
   --ink: #1c153e;
   --paper: #f5f5f7;
@@ -453,7 +461,7 @@
   gap: 8px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 2.76rem;
+  font-size: 1.8rem;
   line-height: 1.1;
   white-space: normal;
   margin: 0;
