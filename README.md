@@ -3,37 +3,43 @@
 An **AI agent that helps CSMs upsell existing customers** (e.g. from Titan Watch to
 Titan MAX) — built on SecurityScorecard APIs, with no SSC frontend involved.
 
-The main interface is the **Opportunities** board: every signal across the portfolio,
-grouped into four lanes —
+The app is called **Gaia**, and the nav has four tabs, each a wide, descriptively-labelled
+button rather than a short tab name:
 
-- **Own Cyber Posture** — evidence the customer's own security is already paying off
-- **Usage** — platform usage telling you the account is ready for more
-- **Monitoring Opportunities** — third-party and sector risk, plus new people worth bringing
-  into monitoring or engagement
-- **Growing attack surface** — company news that expands the customer's own footprint
-  (acquisitions, new offices, new products)
+1. **All Growth Signals** — the main board, every signal across the portfolio, grouped
+   into four lanes: **Change in score** (evidence the customer's own security is
+   already paying off), **Change in Usage** (platform usage telling you the account is
+   ready for more), **Change in Risk** (third-party and sector risk), and **Change at
+   Customer** (personnel changes, company news, and relationship signals like email,
+   CRM, tickets and surveys).
+2. **Today** — the agent's ranked daily worklist, three drafted actions.
+3. **Ask** — a conversational agent over live portfolio data; the conversation persists
+   across tab switches instead of resetting.
+4. **Joint Success Plan** — per-customer objective and agreed target metric, plus a
+   30-day feed of what's actually changed, sorted by what needs attention first.
 
-Each card leads with a short, active-voice instruction ("Warn them: X is showing
-elevated risk"); the fuller explanation is a click away, not shown by default. A
-**Default / Detailed / Compact** toggle and a text-size control let a CSM pick how
-much detail is on screen at once, and a search/multi-select picker (with customer
-logos) narrows the board to specific accounts instead of scanning everyone.
+Each opportunity card leads with a short, active-voice instruction ("Warn them: X is
+showing elevated risk"); the fuller explanation is a click away, not shown by default.
+A settings menu (gear icon, top right) holds the CSM/Customer view toggle, the
+Default/Detailed/Compact density toggle, and the text-size control, and a
+search/multi-select picker (with customer logos) narrows the board to specific accounts
+instead of scanning everyone. All four tabs' data loads in parallel as soon as the app
+opens, so switching between them is instant rather than triggering a fresh fetch.
 
 Behind the board, **daily research** runs unattended: once a day it searches the news
 for every account and extracts structured events. And an **MCP server** exposes the same
 portfolio tools to any MCP client, so a CSM can work the portfolio with no interface of
 ours involved. See [MCP.md](MCP.md).
 
-The **Today** (agent-drafted daily priorities), **Ask** (plain-English portfolio Q&A),
-and **Customers** (per-account drill-down) views are still fully implemented in the
-codebase — backend endpoints and frontend components both — but aren't wired into the
-nav, since Opportunities is the one view CSMs use day to day. See
-[frontend/src/App.tsx](frontend/src/App.tsx) if you want to bring one back.
+**Customers** (per-account drill-down) is still fully implemented in the codebase —
+backend endpoints and frontend components both — but isn't wired into the nav. See
+[frontend/src/App.tsx](frontend/src/App.tsx) if you want to bring it back.
 
 - **[IMPLEMENTED.md](IMPLEMENTED.md)** — what's built, trigger coverage, data
   provenance, limitations, criteria self-assessment. Start here if you're reviewing.
 - **[MCP.md](MCP.md)** — connecting Claude Desktop to the tools.
-- **[DEPLOY.md](DEPLOY.md)** — putting it on a URL for the team.
+- **[DEPLOY.md](DEPLOY.md)** — putting it on a URL for the team (Render).
+- **[deploy_to_pythonanywhere.md](deploy_to_pythonanywhere.md)** — same, on PythonAnywhere instead.
 
 ---
 
@@ -121,41 +127,38 @@ http://localhost:8000/docs.
 
 ## Using it
 
-**Opportunities** is the landing screen and the only view in the nav — every signal,
-across four lanes (Own Cyber Posture, Usage, Monitoring Opportunities, Growing attack
-surface). A few things to know:
+**All Growth Signals** is the landing screen — every signal, across the four lanes
+described above. A few things to know:
 
-- Each card shows a short, active-voice instruction by default (e.g. "Flag rising slot
-  usage before it hits the licensed cap."). Click the **ⓘ** to see the fuller
-  explanation, or switch to the **Detailed** view to show it inline for every card.
-- **Default / Detailed / Compact** (top right) trade off how much is on screen at once;
-  Compact fits far more per lane without scrolling. **A− / A+** scales text size. Both
-  choices persist across reloads.
+- Each card shows a short, active-voice instruction by default (e.g. "Send them an
+  automated quote to upgrade before they hit the cap."). Click the **ⓘ** to see the
+  fuller explanation, or switch to the **Detailed** view (settings menu) to show it
+  inline for every card.
+- The **settings menu** (gear icon, top right) holds three groups: **Viewing as**
+  (CSM / Customer — Customer hides pricing and discount cards), **Density**
+  (Default / Detailed / Compact — Compact fits far more per lane without scrolling),
+  and **text size** (A− / A+). All three persist across reloads.
 - **Select customers** searches and multi-selects accounts (with logos, falling back to
   initials avatars when a domain has no logo) to narrow the board — the default with
   nothing selected is "Showing all customers."
 - Click a card for an editable drafted email with a recipient dropdown. News cards also
-  carry a link to the source article, which is appended to the email. Tick *"Show
-  unbuilt triggers as concepts"* for illustrative cards covering triggers that aren't
-  built yet.
+  carry a link to the source article, which is appended to the email.
+- The **provenance legend** (icons explaining where each kind of data comes from, plus
+  the *"Show unbuilt triggers as concepts"* toggle for illustrative cards) sits at the
+  **bottom** of the board, below the four lanes.
 - **View in SecurityScorecard** links out to the team's portfolio in the SSC platform.
-- The greeting and the name signing each drafted email come from `CSM_NAME`.
-
-**Provenance icons** in the legend explain where each kind of data comes from. Tick
-**"Show unbuilt triggers as concepts"** for illustrative cards covering the triggers
-that aren't built yet — each names the data source it's waiting on.
+- The name signing each drafted email comes from `CSM_NAME`.
 
 **"Auto-researched &lt;date&gt; · Run now"** in the top bar is the daily research agent. It
 runs once per day while the backend is up; the button forces a run.
 
-**Reaching the agent.** The tool-calling agent isn't linked from the board, so there are
-two ways in. **MCP** — connect Claude Desktop to the same tools and work the portfolio
-conversationally ([MCP.md](MCP.md)); this is the recommended path. Or **the API** —
-`POST /agent/chat` for questions, `GET /today` for a ranked worklist with drafted
-emails. **Customers** (per-account drill-down: SSC score chart, usage breakdown, tracked
-decision-makers and news, "Add customer" / "Sync from portfolio") is likewise still
-implemented but not in the nav. All of these need `OPENAI_API_KEY` (or
-`ANTHROPIC_API_KEY`).
+**Today**, **Ask**, and **Joint Success Plan** are full tabs in the nav (see above) —
+`POST /agent/chat` and `GET /today` are also reachable directly over the API, and the
+same tools are exposed over MCP ([MCP.md](MCP.md)) for working the portfolio from
+Claude Desktop with no UI of ours involved. **Customers** (per-account drill-down: SSC
+score chart, usage breakdown, tracked decision-makers and news, "Add customer" / "Sync
+from portfolio") is likewise still implemented but not in the nav. All of the
+agent-backed views need `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`).
 
 **Research** — two ways to populate decision-makers and news:
 
@@ -203,15 +206,19 @@ backend/
 frontend/
   src/
     components/
-      OpportunityBoard.tsx   The main (and only nav'd) view
+      OpportunityBoard.tsx   All Growth Signals -- the main board
+      TodayView.tsx          Today -- agent-ranked daily worklist
+      AgentChat.tsx          Ask -- conversational agent, stays mounted across tabs
+      SuccessPlanView.tsx    Joint Success Plan -- target metric + 30-day change feed
+      SettingsMenu.tsx       CSM/Customer, density and text-size controls, gear-icon menu
+      Spinner.tsx            Shared no-text loading indicator
       CustomerPicker.tsx     Search + multi-select customer filter, with logos
       CustomerLogo.tsx       Clearbit logo lookup, initials-avatar fallback
-      BoardControls.tsx      Default/Detailed/Compact + text-size controls
+      BoardControls.tsx      Default/Detailed/Compact + text-size controls (used by SettingsMenu)
       InfoPopover.tsx        Click-to-reveal detail affordance ("ⓘ")
       icons.tsx              Small inline SVG icon set
       EmailDrawer.tsx        Editable drafted email for a card
-      TodayView.tsx, AgentChat.tsx, CustomerTable.tsx,
-      CustomerDetail.tsx, ...  Today/Ask/Customers views (not in the nav, see above)
+      CustomerTable.tsx, CustomerDetail.tsx, ...  Customers view (not in the nav, see above)
     api/client.ts
 ```
 

@@ -2,7 +2,7 @@
 
 Project 5: Customer Upsell, Retention & Decision-Making Automation.
 Built for the SSC Hackathon theme *Agentic, API-First: Reimagine a Core Workflow*.
-Last updated: 11 August 2026.
+Last updated: 17 August 2026.
 
 ---
 
@@ -31,11 +31,11 @@ before extracting them — unattended, on a schedule, with an LLM making the jud
 calls. And the MCP server hands a tool-calling agent the same four tools, letting it
 choose which accounts to examine rather than following a fixed query.
 
-**What isn't reachable from the current UI.** A `Today` briefing endpoint (three ranked
-actions with drafted emails) and an `Ask` conversational agent are both built, tested
-and live at `/today` and `/agent/chat` — but the UI was consolidated to the single board
-and no longer links to them. They remain available over the API and through MCP. This is
-a deliberate team decision to keep one clean surface, not an abandoned feature.
+**All four now live in one nav.** `Today` (three ranked actions with drafted emails) and
+`Ask` (a conversational agent) were originally API-only, reachable at `/today` and
+`/agent/chat` with no UI path. That's since changed — the nav is now **1. All Growth
+Signals, 2. Today, 3. Ask, 4. Joint Success Plan**, so both are on screen alongside the
+board rather than only reachable over the API or through MCP.
 
 ---
 
@@ -43,10 +43,12 @@ a deliberate team decision to keep one clean surface, not an abandoned feature.
 
 | Entry point | What it is | Status |
 |---|---|---|
-| **Opportunities board** | Every signal, four lanes, drafted email per card | **The UI.** What you see on screen |
+| **All Growth Signals** (the board) | Every signal, four lanes, drafted email per card | **The UI.** Tab 1 |
+| **Today** | Agent-ranked worklist, three drafted actions | **The UI.** Tab 2 |
+| **Ask** | Conversational agent over live portfolio data | **The UI.** Tab 3, session persists across tab switches |
+| **Joint Success Plan** | Target-vs-actual metric, 30-day change feed, per customer | **The UI.** Tab 4 |
 | **Daily research agent** | Searches news per account, extracts structured events, unattended | **Running.** Surfaced as "Auto-researched <date> · Run now" |
 | **MCP server** | The same portfolio tools over Model Context Protocol | **Working.** The agentic demo — see [MCP.md](MCP.md) |
-| **`/today`, `/agent/chat`** | Ranked worklist; conversational agent | **Built, API-only.** No UI path in the current design |
 
 All of them share one tool layer (`app/services/agent_tools.py`), so they cannot drift
 apart.
@@ -70,7 +72,7 @@ out to them.
 | News events (acquisitions, offices, launches) <abbr title="Feed: https://news.google.com/rss/search?q=... — headline, publish date, publisher and article link only, no article body (the DuckDuckGo/cloudscraper body-scraper was removed, see Known limitations). Extraction: OpenAI gpt-4o-mini, response_format=json_object, same prompt rules as the manual flow. Cached per domain at backend/data/news_events/{domain}.json. backend/app/services/web_research.py.">ⓘ</abbr> | [Google News RSS](https://news.google.com/rss/search?q=example) → [OpenAI](https://platform.openai.com/docs/api-reference/chat) extraction | **Researched**, cached, with a link to the source article |
 | Decision-makers / job titles <abbr title="No API call from our backend. decision_maker_prompt.py builds a prompt (employment test, fit test, title-evidence hierarchy, CISO/BISO priority, LinkedIn URL verification); a human runs it in Claude, which reaches indexed LinkedIn snippets our server can't fetch (a direct server-side fetch of a public LinkedIn profile returns 0 characters — login wall). Pasted-back JSON is parsed and cached at backend/data/decision_makers/{domain}.json. backend/app/routers/decision_makers.py (import endpoint).">ⓘ</abbr> | Research prompt run in [Claude](https://claude.ai/), pasted back | **Researched**, cached |
 | Agent reasoning (Today, Ask) <abbr title="gpt-4o-mini by default, overridable via AGENT_MODEL. Tool-calling loop over the same four tools MCP exposes (agent_tools.py); every tool call and its token cost is surfaced in the response. backend/app/services/agent.py, line 66-141.">ⓘ</abbr> | Live tool calls over the above | **Live** |
-| Platform usage (logins, slots, reports) <abbr title="Python's random.Random, seeded on customer_id for the licensed-slot cap (a contract property) and on f'{customer_id}:{today}' for everything else — deterministic per customer per day, so demos are stable within a day but drift day to day. No real feed exists yet. backend/app/services/mock_usage.py.">ⓘ</abbr> | [Deterministic placeholder generator](https://docs.python.org/3/library/random.html#random.Random) | **Sample** — marked `◇ Sample data` |
+| Platform usage (logins, new vendors added, reports) <abbr title="Python's random.Random, seeded on customer_id for the licensed-slot cap (a contract property) and on f'{customer_id}:{today}' for everything else — deterministic per customer per day, so demos are stable within a day but drift day to day. No real feed exists yet. backend/app/services/mock_usage.py.">ⓘ</abbr> | [Deterministic placeholder generator](https://docs.python.org/3/library/random.html#random.Random) | **Sample** — marked `◇ Sample data` |
 | Sponsor / CSM assignment <abbr title="sponsor and csm fields in backend/data/customers.json, hand-entered — no CRM/Salesforce connection exists. See 'Why we're blocked on the rest' for what would replace this.">ⓘ</abbr> | Seed data | **Sample** — no CRM connected |
 
 ### Four tiers, always labelled
@@ -82,13 +84,19 @@ Every card carries an icon for its tier — no card is unmarked.
 | **Live** | Read directly from the SecurityScorecard API | 9 | Green live icon |
 | **Researched** | Real, but assembled by us from public sources and cached | 23 | Petrol researched icon |
 | **Sample** | Real trigger logic, placeholder *input* data | 6 | Grey sample icon |
+| **Mockup** | A specific new signal source we haven't integrated yet, shown as one illustrative example per source | 8 (4 sources × 2 customers) | Distinct mockup icon, badge naming the source, visible by default |
 | **Concept** | Trigger not built — an illustration of what it would surface | 13 (off by default) | `⚑ Not built — concept`, plus the trigger number and the data source it's waiting on |
 
-Two distinctions worth drawing. **Live vs researched:** a score comes back from an API
+Three distinctions worth drawing. **Live vs researched:** a score comes back from an API
 and is as true as SSC's data; a news event was searched for and extracted by a model, so
 it carries more uncertainty and is worth flagging as such. **Sample vs concept:** sample
 cards run production logic on placeholder numbers, concept cards are pure illustration
-with invented numbers and no logic behind them.
+with invented numbers and no logic behind them. **Mockup vs concept:** both are
+invented data, but mockup cards are for sources *outside* the original 23-trigger list
+(email, Salesforce, support tickets, surveys) and are visible by default since they're a
+real addition to the board's story; concept cards illustrate an *already-numbered*
+trigger from the brief and stay hidden until asked for, so the honest default view never
+overstates what's built.
 
 **Concept cards are off by default** — the honest view is the one you get without
 thinking about it. Tick *"Show unbuilt triggers as concepts"* in the board legend to
@@ -110,12 +118,12 @@ drive ARR growth"*.
 
 | # | Trigger | Data source |
 |---|---|---|
-| 1 | Nearing full utilisation of licensed vendor slots | Sample usage <abbr title="slots_used / licensed_slots >= 0.85 (_SLOT_CAPACITY_WARN_PCT). Both numbers come from mock_usage.py's per-customer/per-day generator. signals.py, build_signal().">ⓘ</abbr> |
+| 1 | Nearing full utilisation of licensed vendor slots | Sample usage <abbr title="slots_used / licensed_slots >= 0.85 (_SLOT_CAPACITY_WARN_PCT). Both numbers come from mock_usage.py's per-customer/per-day generator. signals.py, build_signal(). CTA now reads 'Send them an automated quote to upgrade before they hit the cap.'">ⓘ</abbr> |
 | 2 | Acquisition announced | Automated news research <abbr title="gpt-4o-mini classifies each headline's event_type; 'acquisition' events become this card. Deduplicated across outlets by shared named subject (opportunities.py, _dedupe_news_events()).">ⓘ</abbr> |
-| 3 | Increasing utilisation of portfolio slots | Sample usage <abbr title="slots_delta_7d, the difference between this week's and last week's slots_filled_7d in mock_usage.py. Computed by the signal layer and served over /signals; no standalone card — folds into the Usage lane's slot-capacity signal.">ⓘ</abbr> |
+| 3 | New vendors added to monitoring, trending up | Sample usage <abbr title="slots_delta_7d, the difference between this week's and last week's slots_filled_7d in mock_usage.py -- a count of new vendors added to the monitored portfolio, not a capacity/utilisation figure (per SecurityScorecard's glossary, a 'slot' is a fixed quota unit, not a weekly activity metric). Computed by the signal layer and served over /signals; also surfaces as its own 'usage trending down' card when it falls.">ⓘ</abbr> |
 | 5 | New offices / regional operations | Automated news research <abbr title="event_type == 'expansion' from the same Google News → gpt-4o-mini pipeline as trigger #2.">ⓘ</abbr> |
 | 6 | New product or service launch | Automated news research <abbr title="event_type == 'launch' from the same Google News → gpt-4o-mini pipeline as trigger #2.">ⓘ</abbr> |
-| 7 | Supplier breach anticipated | **Live** <abbr title="Worst-scoring entry from GET /vendor-detection/{domain}/third-party below _SUPPLIER_RISK_SCORE_THRESHOLD = 50, after the infrastructure/OSS denylist. opportunities.py.">ⓘ</abbr> — SSC vendor-detection scores |
+| 7 | Supplier breach anticipated | **Live** <abbr title="Worst-scoring entry from GET /vendor-detection/{domain}/third-party below _SUPPLIER_RISK_SCORE_THRESHOLD = 50, after the infrastructure/OSS denylist. opportunities.py. CTA now reads 'Increase monitoring — {vendor} is showing elevated risk.'">ⓘ</abbr> — SSC vendor-detection scores |
 | 10 | High platform engagement | Sample usage <abbr title="engagement_score = slots_filled_7d*3 + reports_generated_7d + total_visits_7d, threshold 75 (_ENGAGEMENT_THRESHOLD). All three inputs are mock_usage.py numbers. signals.py, build_signal().">ⓘ</abbr> |
 | 11 | Close peer breach anticipated | **Live** <abbr title="Largest SSC score decline among other tracked customers sharing the same industry field — the peer is never named, only the industry and the delta. opportunities.py, 'close peer breach anticipated', line ~399-417.">ⓘ</abbr> — SSC scores, anonymised across tracked customers |
 | 12 | Top security score within industry | **Live** <abbr title="Customer's current score is the max among all tracked customers sharing its SSC industry field. opportunities.py + signals.py industry_top_ids()/industry_stats().">ⓘ</abbr> — SSC scores |
@@ -124,8 +132,8 @@ drive ARR growth"*.
 | 19 | Alumni joins another customer org | Cross-customer decision-maker diffing <abbr title="Matches a newly-identified person's name (or LinkedIn URL) against every other tracked customer's cached decision-maker list — no LinkedIn Sales Navigator involved, just our own accumulated research. opportunities.py, line ~486-500.">ⓘ</abbr> |
 | 21 | New user logs in for the first time | Sample usage <abbr title="A name in this day's mock_usage.py individuals list that isn't in backend/data/usage_individuals/{customer_id}.json yet; that file is then updated. mock_usage.py, build_usage_summary().">ⓘ</abbr> |
 
-Trigger #3 is computed by the signal layer and served over `/signals`, but has no card
-of its own on the board — it shows up as part of the Usage lane's slot-capacity signal.
+Trigger #3 is computed by the signal layer and served over `/signals`, and also backs
+the Usage lane's "usage trending down" card when new-vendor additions fall.
 
 ### Not built — blocked on data or access
 
@@ -145,18 +153,80 @@ showing what it would surface once the data source exists.
 | 22 | A non-DMU user posts about cybersecurity | Same as #20 — but a distinct play: spotting a potential champion, not replying to a known contact |
 | 23 | Upcoming CSM meeting identified | Salesforce / calendar integration |
 
+### Signals added since the original 23, and one removed
+
+A later round added new cards beyond the brief's numbered list, and dropped one
+heuristic that didn't hold up.
+
+**New cards:**
+
+| Signal | Lane | Data source |
+|---|---|---|
+| Score up a lot + a residual at-risk supplier | Change in score | Sample/Live combo <abbr title="Pairs the same score-up flag as trigger #13 with the same vendor-detection lookup as trigger #7 -- celebrates the score, then pivots to the at-risk supplier as the reason to add monitoring slots. opportunities.py.">ⓘ</abbr> |
+| No platform activity in 7 days | Change in Usage | Sample usage <abbr title="slots_filled_7d == 0 and reports_generated_7d == 0 and total_visits == 0. Invites the account to an Executive Business Review rather than another email. opportunities.py.">ⓘ</abbr> |
+| Usage trending down | Change in Usage | Sample usage <abbr title="slots_delta_7d < -2 -- same threshold signals.py already used for its risk reasons, now also a standalone card. Originally also fired on a reports_delta_7d decline; that leg was removed (see below). opportunities.py.">ⓘ</abbr> |
+| High questionnaire volume — pitch MAX | Change in Usage | Sample usage <abbr title="questionnaires_licensed - questionnaires_remaining > 10. Recommends Titan MAX to manage response volume. opportunities.py.">ⓘ</abbr> |
+| Acquisition → recommend more slots | Change at Customer | Researched <abbr title="Enriches the existing acquisition news card's CTA/advice (trigger #2) to recommend additional monitoring slots given the likely growth in supplier count -- no fabricated multiplier, since this card is real/researched data. opportunities.py, _NEWS_EVENT_META.">ⓘ</abbr> |
+| New CISO previously on Titan MAX | Change at Customer | Researched <abbr title="Enriches the alumni-match card (trigger #19): if the newly-identified person's prior tracked employer had 'MAX' in last_purchase_product (real seed data), the pitch names Titan MAX specifically. opportunities.py, alumni block.">ⓘ</abbr> |
+
+**New mock-only sources** (the **Mockup** tier — see above), one illustrative example
+each for two customers per source, all in **Change at Customer**: email correspondence,
+Salesforce, support tickets, customer surveys. `backend/app/services/mock_signals.py`.
+
+**Removed:** *"No CSM currently assigned"* as a retention-risk reason
+(`backend/app/services/signals.py`). It fed the `/signals` risk classification but
+didn't reflect an actual customer-side signal, so it was dropped rather than kept as
+dead weight in the risk reasoning.
+
+**Also removed:** both directions of a "reports generated" trend signal ("Reports
+generated dropping" as a risk reason, and "Reports generated trending up" as an upsell
+reason) — treating how many reports a customer generated as a weekly rising/falling
+signal didn't hold up on reflection. `reports_generated_7d`/`reports_delta_7d` are
+still used (the zero-activity check, the engagement-score input, the Usage panel
+display) — just no longer surfaced as their own directional signal.
+`backend/app/services/signals.py`, `backend/app/services/opportunities.py`.
+
+**Corrected:** wording that misused SecurityScorecard's own terminology. Per SSC's
+glossary, a **slot** is one Scorecard occupying a fixed quota — a capacity concept, not
+a weekly activity metric. `slots_filled_7d` (new vendors added to monitoring that week)
+was being described as "slots filled," lumped alongside logins and reports as if
+occupying a slot were a recurring engagement action. Reworded throughout
+(`signals.py`, `opportunities.py`, `UsagePanel.tsx`, `CustomerTable.tsx`,
+`OpportunityBoard.tsx`) to "new vendors added to monitoring" — the genuine quota-usage
+signals ("licensed vendor slots used," "nearing full utilisation") were already correct
+and left unchanged.
+
+**Relabelled, not changed:** the four lanes are now named **Change in score**,
+**Change in Usage**, **Change in Risk**, **Change at Customer** (previously Own Cyber
+Posture / Usage / Monitoring Opportunities / Growing attack surface), with personnel
+and mock relationship signals reclassified into Change at Customer for a better
+semantic fit. See `frontend/src/components/OpportunityBoard.tsx`, `GROUPS`.
+
 ---
 
 ## Features
 
-**Opportunities board** (the whole UI)
-- Greets the current CSM by name; the same name signs every drafted email
-- Four lanes: **Own Cyber Posture**, **Usage**, **Monitoring Opportunities**, **Growing
-  attack surface**
+**The app** is branded **Gaia**. Its nav is four wide tiles carrying the full
+description as the label, not a short tab name — e.g. tab 1 reads "1. Best action
+recommendations this month to drive growth across customers," not "1. All Growth
+Signals." All four tabs' components mount and fetch their data in parallel the moment
+the app loads (not only once a CSM clicks into one), and every "please wait" state in
+the app is a plain spinner with no text — no page ever shows the word "Loading."
+`frontend/src/App.tsx`, `frontend/src/components/Spinner.tsx`.
+
+**Settings menu** (gear icon, top right, `SettingsMenu.tsx`) — the CSM/Customer view
+toggle, Default/Detailed/Compact density, and text size all live behind one icon
+instead of sitting inline in the header.
+
+**All Growth Signals board** (tab 1)
+- Four lanes: **Change in score**, **Change in Usage**, **Change in Risk**, **Change at
+  Customer**
+- The CSM/Customer toggle (in the settings menu) hides pricing/discount cards from the
+  customer-facing view
 - Searchable multi-select customer picker with logos, filtering the board
-- Default / Detailed / Compact view modes plus a text-size control
 - Short active-voice copy on each card, with the fuller explanation on click
-- Provenance icons with click-through info, and the concept-card toggle
+- Provenance legend (icons + click-through info, and the concept-card toggle) sits at
+  the **bottom** of the board, below all four lanes
 - Daily research status + "Run now"
 - Static link out to the SecurityScorecard portfolio
 
@@ -166,14 +236,37 @@ showing what it would surface once the data source exists.
 - For news cards, a link to the source article — shown in the drawer and appended to
   the drafted email, so a CSM congratulating someone has the story attached
 
+**Today** (tab 2) — agent surveys every account, drills into what matters, returns 3
+ranked actions with drafted emails, cached per calendar day.
+
+**Ask** (tab 3) — conversational agent over live portfolio data, reporting which tools
+it chose and the tokens each answer cost. The conversation stays mounted (just hidden)
+when you switch tabs, so it doesn't reset if you flip over to the board and back. The
+four suggested prompts cover prioritisation, decision-maker outreach, a regulatory
+scenario, and supplier risk.
+
+**Joint Success Plan** (tab 4) — per-customer view pairing the agreed objective (headed
+"The problem they are paying SSC to solve") and target metric against a 30-day feed of
+what actually changed:
+- A bolded **Executive Summary** heading over the per-customer summary paragraph
+- The baseline/current/target numbers reorder so **current always sits on the outer
+  edge it has passed** — current on the right (with target moving to center) when it's
+  **exceeded the target**, current on the left (with baseline moving to center) when
+  it's fallen **below the baseline** — rather than always sitting in a fixed middle
+  position where an overshoot in either direction is easy to miss
+- The change feed (score movement, supplier alerts, company news, new stakeholders,
+  engagement stats) is sorted by **importance** (items needing attention first,
+  regardless of category) rather than a fixed Score/Suppliers/Company/People/Engagement
+  order
+- The plan fields themselves (objective, supplier counts, target, dates) are mocked —
+  tagged `data_source="mockup"` — since there's no Salesforce connection; the change
+  feed draws on the same real sources as the board.
+  `backend/app/services/success_plan.py`, `frontend/src/components/SuccessPlanView.tsx`.
+
 **MCP server** — the same tools over Model Context Protocol, so any MCP client can
 drive the workflow with no frontend of ours. See [MCP.md](MCP.md).
 
 **Built, but not surfaced in the current UI**
-- `/today` — agent surveys every account, drills into what matters, returns 3 ranked
-  actions with drafted emails. Cached per calendar day
-- `/agent/chat` — conversational agent over live portfolio data, reporting which tools
-  it chose and the tokens each answer cost
 - `/customers/*` — per-account detail, manual add, and **Sync from portfolio** to
   import anything added directly in the SecurityScorecard UI
 
@@ -225,7 +318,7 @@ Open on the board. Land the autonomy claim early, then finish in Claude Desktop.
 
 1. **The board** — *"38 engagement opportunities across 13 accounts, and every one of
    them came from a live API call."* Walk the four lanes in a sentence each.
-2. **Open a Growing attack surface card.** The drafted email is already addressed to the
+2. **Open a Change at Customer card.** The drafted email is already addressed to the
    right person, with the article attached. *"The CSM edits or sends. They don't write
    from scratch."*
 3. **Point at "Auto-researched <date> · Run now".** This is the strongest autonomy
@@ -340,10 +433,10 @@ Stated plainly, because they matter for judging what's demo-ready vs production-
   usable hook, but it's the partner's news.
 
 **Interface**
-- **The agent has no UI.** `/today` and `/agent/chat` are built and working but the
-  consolidated board doesn't link to them, so the tool-calling agent is only reachable
-  over MCP or the API. Deliberate, but it means a judge looking only at the screen sees
-  automation rather than agency.
+- **`/customers/*` has no UI.** Per-account detail, manual add, and "Sync from
+  portfolio" are built and working but not reachable from the nav — only Today, Ask,
+  All Growth Signals and Joint Success Plan are, along with MCP and the API for
+  everything else.
 - **Company logos don't load.** The board requests them from `logo.clearbit.com`, which
   doesn't resolve in our environment; every card falls back to an initials avatar, and
   the failed requests show as console errors. Cosmetic, and left as-is by team decision.
@@ -402,7 +495,7 @@ Every unbuilt trigger is blocked on **access to data**, not on engineering time.
 being precise about which, because they're not all the same kind of blocked.
 
 **1. No access to the data source** — the biggest group.
-Platform usage (logins, slots, reports) has no API we can reach, so triggers 1, 3, 10
+Platform usage (logins, new vendors added, reports) has no API we can reach, so triggers 1, 3, 10
 and 21 run on placeholder numbers. Per-customer supplier portfolios aren't configured
 in SSC, blocking 14 and 15. There's no breach-event feed for 8. Share price (16) needs
 a paid market-data API. Customer Forum (18) is a tool we have no access to.
