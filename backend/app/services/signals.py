@@ -39,9 +39,10 @@ _SCORE_RISK_REASONS = {
 }
 
 
-_ENGAGEMENT_THRESHOLD = 75  # slots_filled_7d*3 + reports_generated_7d + total_visits_7d -- tuned so this
-# only fires for genuinely high-engagement weeks (top ~quartile), not the typical case
-_SLOT_CAPACITY_WARN_PCT = 0.85
+_ENGAGEMENT_THRESHOLD = 75  # new_vendors_added_7d*3 + reports_generated_7d + total_visits_7d -- tuned so
+# this only fires for genuinely high-engagement weeks (top ~quartile), not the typical case
+_SLOT_CAPACITY_WARN_PCT = 0.85  # a "slot" is one Scorecard against the subscription's monitoring quota
+# (per SecurityScorecard's glossary) -- this tracks how full that quota is, not an activity rate.
 
 
 def build_signal(
@@ -66,16 +67,12 @@ def build_signal(
 
     total_visits = sum(i.visits_7d for i in usage.individuals)
     if usage.slots_filled_7d == 0 and usage.reports_generated_7d == 0 and total_visits == 0:
-        risk_reasons.append("No platform activity (slots, reports, or logins) in the last 7 days")
+        risk_reasons.append("No platform activity (new vendors added, reports, or logins) in the last 7 days")
     else:
         if usage.slots_delta_7d > 0:
-            upsell_reasons.append(f"Slots filled trending up (+{usage.slots_delta_7d} vs. prior week)")
+            upsell_reasons.append(f"New vendors added to monitoring, trending up (+{usage.slots_delta_7d} vs. prior week)")
         elif usage.slots_delta_7d < -2:
-            risk_reasons.append(f"Slots filled dropping ({usage.slots_delta_7d} vs. prior week)")
-        if usage.reports_delta_7d > 3:
-            upsell_reasons.append(f"Reports generated trending up (+{usage.reports_delta_7d} vs. prior week)")
-        elif usage.reports_delta_7d < -3:
-            risk_reasons.append(f"Reports generated dropping ({usage.reports_delta_7d} vs. prior week)")
+            risk_reasons.append(f"New vendors added to monitoring slowing ({usage.slots_delta_7d} vs. prior week)")
 
         engagement_score = usage.slots_filled_7d * 3 + usage.reports_generated_7d + total_visits
         if engagement_score >= _ENGAGEMENT_THRESHOLD:

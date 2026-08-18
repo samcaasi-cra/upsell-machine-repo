@@ -35,7 +35,7 @@ export function UsagePanel({ usage }: { usage: UsageSummary }) {
       <div style={{ display: "flex", gap: 24, margin: "14px 0", flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700 }}>{usage.slots_filled_7d}</div>
-          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Slots filled (7d)</div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>New vendors added (7d)</div>
           <DeltaTag value={usage.slots_delta_7d} />
         </div>
         <div>

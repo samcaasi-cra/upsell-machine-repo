@@ -396,18 +396,18 @@ def build_opportunity_cards(
             "watch",
             "Invite them to an Executive Business Review.",
             "Checking in — haven't seen you in the platform lately",
-            f"We haven't seen any platform activity from {customer.name} in the last 7 days — no slots "
-            "filled, no reports, no logins. Worth inviting the team to an Executive Business Review to "
-            "re-anchor on value before it becomes a renewal risk.",
+            f"We haven't seen any platform activity from {customer.name} in the last 7 days — no new "
+            "vendors added to monitoring, no reports, no logins. Worth inviting the team to an Executive "
+            "Business Review to re-anchor on value before it becomes a renewal risk.",
             data_source="sample",
-            detail="No slots filled, reports generated, or logins in the last 7 days.",
+            detail="No new vendors added to monitoring, reports generated, or logins in the last 7 days.",
             source_detail="Deterministic placeholder generator, seeded per customer per day — no real "
             "usage feed exists yet. backend/app/services/mock_usage.py:18 (build_usage_summary()).",
         )
     # --- Usage trending down significantly (but not fully dark) -- same delta
-    # thresholds signals.py already uses for its risk reasons. Distinct from the
+    # threshold signals.py already uses for its risk reasons. Distinct from the
     # zero-activity case above so the two don't both fire for the same account. ---
-    elif usage.slots_delta_7d < -2 or usage.reports_delta_7d < -3:
+    elif usage.slots_delta_7d < -2:
         card(
             "adoption",
             f"{usage.slots_delta_7d}",
@@ -415,12 +415,11 @@ def build_opportunity_cards(
             "watch",
             "Invite them to an Executive Business Review.",
             "Checking in on your recent platform usage",
-            f"{customer.name}'s platform usage has dropped notably this week (slots filled "
-            f"{usage.slots_delta_7d:+d}, reports {usage.reports_delta_7d:+d} vs. the prior week). Worth "
-            "inviting the team to an Executive Business Review before the trend continues.",
+            f"{customer.name}'s platform usage has dropped notably this week (new vendors added to "
+            f"monitoring {usage.slots_delta_7d:+d} vs. the prior week). Worth inviting the team to an "
+            "Executive Business Review before the trend continues.",
             data_source="sample",
-            detail=f"Slots filled {usage.slots_delta_7d:+d}, reports generated {usage.reports_delta_7d:+d} "
-            "vs. the prior week.",
+            detail=f"New vendors added to monitoring {usage.slots_delta_7d:+d} vs. the prior week.",
             source_detail="Deterministic placeholder generator, seeded per customer per day — no real "
             "usage feed exists yet. backend/app/services/mock_usage.py:18 (build_usage_summary()).",
         )

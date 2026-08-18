@@ -94,7 +94,7 @@ export function CustomerTable({
                 />
               </td>
               <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>
-                {row.usage.slots_filled_7d} slots · {row.usage.reports_generated_7d} reports
+                {row.usage.slots_filled_7d} vendors added · {row.usage.reports_generated_7d} reports
               </td>
               <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-secondary)" }}>
                 {row.decision_maker_count > 0 ? `${row.decision_maker_count} tracked` : "Not researched"}
