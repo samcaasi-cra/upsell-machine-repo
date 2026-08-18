@@ -7,6 +7,7 @@ import { EmailDrawer } from "./EmailDrawer";
 import { ExternalLinkIcon, LiveIcon, MockupIcon, ResearchedIcon, SampleIcon } from "./icons";
 import { InfoPopover } from "./InfoPopover";
 import { OpportunityTicket } from "./OpportunityTicket";
+import { SpinnerBlock } from "./Spinner";
 import type { OpportunityBoardResponse, OpportunityGroup } from "../types";
 
 // Static per confirmation with the team -- update here if the portfolio moves.
@@ -22,7 +23,9 @@ export const GROUPS: { key: OpportunityGroup; label: string; blurb: string }[] =
   {
     key: "adoption",
     label: "Change in Usage",
-    blurb: "Platform usage metrics — slots, logins, questionnaires — telling you the account is ready for more.",
+    blurb:
+      "Platform usage metrics — vendor coverage, logins, questionnaires — telling you the account is " +
+      "ready for more.",
   },
   {
     key: "expansion",
@@ -103,7 +106,7 @@ export function OpportunityBoard({ viewMode, audience }: { viewMode: ViewMode; a
     });
   }
 
-  if (loading) return <p style={{ color: "var(--text-secondary)" }}>Loading opportunities…</p>;
+  if (loading) return <SpinnerBlock />;
   if (error && !board) return <p style={{ color: "var(--status-critical)" }}>Failed to load: {error}</p>;
   if (!board) return null;
 
@@ -118,7 +121,7 @@ export function OpportunityBoard({ viewMode, audience }: { viewMode: ViewMode; a
       <header className="opp-topbar">
         <div className="opp-topbar-primary">
           <span className="opp-live-count">
-            {totalCount} engagement opportunit{totalCount === 1 ? "y" : "ies"}
+            {totalCount} signal{totalCount === 1 ? "" : "s"}
             <span className="opp-live-count-sub">
               across {accountsWithOpps.size} account{accountsWithOpps.size === 1 ? "" : "s"}
             </span>
@@ -154,39 +157,8 @@ export function OpportunityBoard({ viewMode, audience }: { viewMode: ViewMode; a
         <CustomerPicker chips={board.chips} selected={selectedIds} onChange={setSelectedIds} />
       </div>
 
-      <div className="opp-legend">
-        <span className="opp-legend-item">
-          <LiveIcon style={{ color: "var(--moss)" }} />
-          <InfoPopover label="Click for more info">Scores, industry &amp; supplier detection — live SSC API.</InfoPopover>
-        </span>
-        <span className="opp-legend-item">
-          <ResearchedIcon style={{ color: "var(--petrol)" }} />
-          <InfoPopover label="Click for more info">News &amp; decision-makers — researched, then cached.</InfoPopover>
-        </span>
-        <span className="opp-legend-item">
-          <SampleIcon style={{ color: "var(--slate)" }} />
-          <InfoPopover label="Click for more info">
-            Platform usage (logins, slots) — placeholder until the usage feed is connected.
-          </InfoPopover>
-        </span>
-        <span className="opp-legend-item">
-          <MockupIcon style={{ color: "var(--petrol)" }} />
-          <InfoPopover label="Click for more info">
-            Illustrative example of a source we haven't integrated yet — email, CRM, tickets, surveys.
-          </InfoPopover>
-        </span>
-        <label className="opp-concept-toggle" title="Show illustrative cards for triggers from the brief that aren't built yet">
-          <input
-            type="checkbox"
-            checked={showConcepts}
-            onChange={(e) => setShowConcepts(e.target.checked)}
-          />
-          Show unbuilt triggers as concepts
-        </label>
-      </div>
-
       <p className="opp-lanes-intro">
-        You have {totalCount} engagement opportunit{totalCount === 1 ? "y" : "ies"} across {accountsWithOpps.size}{" "}
+        You have {totalCount} signal{totalCount === 1 ? "" : "s"} across {accountsWithOpps.size}{" "}
         account{accountsWithOpps.size === 1 ? "" : "s"} sorted below in the four types of upsell alert.
       </p>
 
@@ -237,6 +209,37 @@ export function OpportunityBoard({ viewMode, audience }: { viewMode: ViewMode; a
           );
         })}
       </main>
+
+      <div className="opp-legend">
+        <span className="opp-legend-item">
+          <LiveIcon style={{ color: "var(--moss)" }} />
+          <InfoPopover label="Click for more info">Scores, industry &amp; supplier detection — live SSC API.</InfoPopover>
+        </span>
+        <span className="opp-legend-item">
+          <ResearchedIcon style={{ color: "var(--petrol)" }} />
+          <InfoPopover label="Click for more info">News &amp; decision-makers — researched, then cached.</InfoPopover>
+        </span>
+        <span className="opp-legend-item">
+          <SampleIcon style={{ color: "var(--slate)" }} />
+          <InfoPopover label="Click for more info">
+            Platform usage (logins, vendor coverage) — placeholder until the usage feed is connected.
+          </InfoPopover>
+        </span>
+        <span className="opp-legend-item">
+          <MockupIcon style={{ color: "var(--petrol)" }} />
+          <InfoPopover label="Click for more info">
+            Illustrative example of a source we haven't integrated yet — email, CRM, tickets, surveys.
+          </InfoPopover>
+        </span>
+        <label className="opp-concept-toggle" title="Show illustrative cards for triggers from the brief that aren't built yet">
+          <input
+            type="checkbox"
+            checked={showConcepts}
+            onChange={(e) => setShowConcepts(e.target.checked)}
+          />
+          Show unbuilt triggers as concepts
+        </label>
+      </div>
 
       {openCard && (
         <EmailDrawer

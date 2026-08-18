@@ -393,7 +393,7 @@
   gap: 16px;
   padding: 8px 20px;
   background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 .opp-legend-item {
   display: inline-flex;

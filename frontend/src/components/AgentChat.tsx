@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import "./OpportunityBoard.css";
+import { Spinner } from "./Spinner";
 
 type Turn = {
   role: "user" | "assistant";
@@ -10,10 +11,10 @@ type Turn = {
 };
 
 const SUGGESTIONS = [
-  "Which 3 accounts should I prioritise this week and why?",
-  "Who has supplier risk I should know about?",
-  "Which accounts have no CSM assigned but look healthy enough to upsell?",
-  "Draft an intro email for the newest decision-maker we've found.",
+  "Which 3 accounts should I prioritise growth this week and why?",
+  "Identify new decision makers at my customers and draft a new intro email.",
+  "Which accounts will be affected by the new TPRM regulation in Singapore?",
+  "Who has the supplier risk I should know about?",
 ];
 
 export function AgentChat() {
@@ -69,17 +70,6 @@ export function AgentChat() {
       <header className="opp-topbar">
         <div>
           <h2>Ask</h2>
-          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--slate)" }}>
-            Ask Gaia about other growth opportunities
-          </p>
-        </div>
-        <div className="opp-topbar-meta">
-          <span className="opp-illustrative-badge">
-            {status?.provider ? `Agent · ${status.provider}` : "Agent"}
-          </span>
-          <span style={{ fontSize: "0.68rem", color: "var(--slate)" }}>
-            Answers from live data — it chooses which tools to call
-          </span>
         </div>
       </header>
 
@@ -180,17 +170,7 @@ export function AgentChat() {
 
         {busy && (
           <div style={{ fontSize: 13, color: "var(--slate)", display: "flex", alignItems: "center", gap: 8 }}>
-            <span
-              style={{
-                width: 12,
-                height: 12,
-                border: "2px solid var(--border)",
-                borderTopColor: "var(--petrol)",
-                borderRadius: "50%",
-                display: "inline-block",
-                animation: "opp-spin 0.8s linear infinite",
-              }}
-            />
+            <Spinner size={12} />
             Thinking — surveying the portfolio, then drilling into what matters…
           </div>
         )}

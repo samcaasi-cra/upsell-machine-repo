@@ -100,3 +100,97 @@ textarea {
 a {
   color: var(--series-1);
 }
+
+/* The 4 top-level nav tabs (App.tsx). Long, descriptive labels rather than short
+   names, so each tab is a wide tile spanning an equal share of the header instead of
+   a small segmented-control pill -- a fully separate style from .board-controls-btn
+   (built for compact clusters) rather than a variant of it. */
+.nav-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+}
+.nav-tab-wide {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.nav-tab-wide:hover {
+  border-color: var(--series-1);
+}
+.nav-tab-wide[aria-pressed="true"] {
+  background: var(--series-1);
+  color: #ffffff;
+  border-color: var(--series-1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 800px) {
+  .nav-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* The header's settings menu (View as CSM/Customer, density, text size), tucked
+   behind a gear icon instead of always on screen. */
+.settings-menu {
+  position: relative;
+  display: inline-flex;
+}
+.settings-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.settings-menu-trigger:hover {
+  color: var(--text-primary);
+}
+.settings-menu-trigger[aria-expanded="true"] {
+  color: var(--series-1);
+  border-color: var(--series-1);
+}
+/* Two classes so this reliably wins over .opp-board's own background/border/radius
+   (equal-specificity ties are order-dependent -- see the nav-tab-btn comment above). */
+.settings-menu-panel.opp-board {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  padding: 12px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-menu-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}

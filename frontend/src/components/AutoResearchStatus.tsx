@@ -1,3 +1,5 @@
+import { Spinner } from "./Spinner";
+
 /**
  * Feedback banner for the auto-research flow.
  *
@@ -28,7 +30,7 @@ export function AutoResearchStatus({
           marginBottom: 10,
         }}
       >
-        <Spinner />
+        <Spinner size={12} />
         Searching the web and extracting results — this usually takes 30–60 seconds.
       </div>
     );
@@ -52,22 +54,5 @@ export function AutoResearchStatus({
       {isError ? "⚠ " : "✓ "}
       {status.text}
     </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <span
-      style={{
-        width: 12,
-        height: 12,
-        border: "2px solid var(--border)",
-        borderTopColor: "var(--series-1)",
-        borderRadius: "50%",
-        display: "inline-block",
-        animation: "opp-spin 0.8s linear infinite",
-        flexShrink: 0,
-      }}
-    />
   );
 }

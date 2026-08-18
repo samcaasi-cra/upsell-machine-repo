@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import "./OpportunityBoard.css";
 import type { ViewMode } from "./BoardControls";
 import { OpportunityTicket, type TicketData } from "./OpportunityTicket";
+import { SpinnerBlock } from "./Spinner";
 
 type Briefing = Awaited<ReturnType<typeof api.getToday>>;
 type Priority = Briefing["priorities"][number];
@@ -94,9 +95,6 @@ export function TodayView({ viewMode, onSeeAll }: { viewMode: ViewMode; onSeeAll
       <header className="opp-topbar">
         <div>
           <h2>Today</h2>
-          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--slate)" }}>
-            The signals best to act on today, hand-picked by the agent.
-          </p>
         </div>
         <div className="opp-topbar-meta">
           {briefing?.pseudonymised && (
@@ -119,12 +117,7 @@ export function TodayView({ viewMode, onSeeAll }: { viewMode: ViewMode; onSeeAll
       </header>
 
       <div style={{ padding: "18px 20px 24px" }}>
-        {loading && (
-          <p style={{ color: "var(--slate)", fontSize: 14 }}>
-            The agent is reviewing the portfolio — surveying every account, then drilling into what
-            matters…
-          </p>
-        )}
+        {loading && <SpinnerBlock />}
 
         {error && <p style={{ color: "var(--amber-ink)", fontSize: 14 }}>{error}</p>}
 

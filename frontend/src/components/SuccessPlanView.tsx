@@ -4,6 +4,7 @@ import "./OpportunityBoard.css";
 import "./SuccessPlanView.css";
 import { InfoPopover } from "./InfoPopover";
 import { LiveIcon, MockupIcon, ResearchedIcon, SampleIcon } from "./icons";
+import { SpinnerBlock } from "./Spinner";
 import type { DataSource, SuccessPlan, SuccessPlanChange } from "../types";
 
 function SourceIcon({ source }: { source: DataSource }) {
@@ -66,15 +67,22 @@ export function SuccessPlanView() {
     [plans, selectedId]
   );
 
-  if (loading) return <p style={{ color: "var(--text-secondary)" }}>Loading success plans…</p>;
+  if (loading) return <SpinnerBlock />;
   if (error) return <p style={{ color: "var(--status-critical)" }}>Failed to load: {error}</p>;
   if (!plan || !plans) return null;
 
   const m = plan.metric;
   const needsAttention = plan.changes.filter((c) => c.direction === "down");
+  // Importance, not category, drives order -- items needing attention float to the
+  // top regardless of whether they're a Score, Supplier, or People change; positive
+  // movement comes next; flat/neutral items last.
+  const importanceRank: Record<SuccessPlanChange["direction"], number> = { down: 0, up: 1, flat: 2 };
+  const sortedChanges = [...plan.changes].sort(
+    (a, b) => importanceRank[a.direction] - importanceRank[b.direction]
+  );
 
   return (
-    <div className="sp-view">
+    <div className="opp-board sp-view">
       <header className="sp-head">
         <div>
           <h2 className="sp-title">Joint success plan with the customer</h2>
@@ -95,13 +103,16 @@ export function SuccessPlanView() {
         </label>
       </header>
 
-      <p className="sp-summary">{plan.summary}</p>
+      <div className="sp-summary">
+        <h3 className="sp-summary-heading">Executive Summary</h3>
+        <p className="sp-summary-text">{plan.summary}</p>
+      </div>
 
       <div className="sp-grid">
         {/* --- the agreement --- */}
         <section className="sp-card">
           <div className="sp-card-head">
-            <h3>The problem they want to solve</h3>
+            <h3>The problem they are paying SSC to solve</h3>
             <span className="sp-src">
               <MockupIcon style={{ color: "var(--petrol)" }} />
               <InfoPopover label="Where this came from">{plan.plan_source_detail}</InfoPopover>
@@ -135,20 +146,56 @@ export function SuccessPlanView() {
           </div>
           <p className="sp-metric-label">{m.label}</p>
 
-          <div className="sp-numbers">
-            <span className="sp-num">
-              <b>{m.baseline}</b>
-              <em>baseline</em>
-            </span>
-            <span className="sp-num sp-num-now" data-ontrack={m.on_track}>
-              <b>{m.current ?? "—"}</b>
-              <em>today · live</em>
-            </span>
-            <span className="sp-num">
-              <b>{m.target}</b>
-              <em>target</em>
-            </span>
-          </div>
+          {(() => {
+            const exceeded = m.current !== null && m.current > m.target;
+            const belowBaseline = m.current !== null && m.current < m.baseline;
+            const currentNote = exceeded ? " · exceeded target" : belowBaseline ? " · below baseline" : "";
+            const current = (
+              <span className="sp-num sp-num-now" data-ontrack={m.on_track}>
+                <b>{m.current ?? "—"}</b>
+                <em>today · live{currentNote}</em>
+              </span>
+            );
+            const baseline = (
+              <span className="sp-num">
+                <b>{m.baseline}</b>
+                <em>baseline</em>
+              </span>
+            );
+            const target = (
+              <span className="sp-num">
+                <b>{m.target}</b>
+                <em>target</em>
+              </span>
+            );
+            // "Current" always moves to whichever outer edge it has passed, with
+            // whatever it passed taking the middle slot -- makes an overshoot in
+            // either direction (past the target, or back below the starting point)
+            // visually obvious instead of reading as "still on the way there."
+            return (
+              <div className="sp-numbers">
+                {belowBaseline ? (
+                  <>
+                    {current}
+                    {baseline}
+                    {target}
+                  </>
+                ) : exceeded ? (
+                  <>
+                    {baseline}
+                    {target}
+                    {current}
+                  </>
+                ) : (
+                  <>
+                    {baseline}
+                    {current}
+                    {target}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="sp-bar" role="img" aria-label={`${m.progress_pct}% of the way to target`}>
             <span className="sp-bar-fill" data-ontrack={m.on_track} style={{ width: `${m.progress_pct}%` }} />
@@ -178,7 +225,7 @@ export function SuccessPlanView() {
           <p className="sp-empty">Nothing moved at this account in the window.</p>
         ) : (
           <ul className="sp-changes">
-            {plan.changes.map((c, i) => (
+            {sortedChanges.map((c, i) => (
               <ChangeRow key={`${c.category}-${i}`} change={c} />
             ))}
           </ul>
