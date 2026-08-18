@@ -1,10 +1,12 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import auth, config
@@ -94,3 +96,15 @@ async def research_run_now() -> dict:
     # Fire and forget: the batch takes minutes, far longer than a sensible HTTP wait.
     asyncio.create_task(scheduler.run_batch(reason="manual"))
     return {"status": "started"}
+
+
+# Optional: serve the built frontend from this same process, instead of as a separate
+# static site (Render's setup). Off by default -- only used by single-web-app hosts
+# like PythonAnywhere, where running two separate services isn't practical. Mounted
+# last so it never shadows an API route above; see deploy_to_pythonanywhere.md.
+if os.getenv("SERVE_FRONTEND_DIST", "").lower() in ("1", "true", "yes"):
+    dist_dir = Path(os.getenv("FRONTEND_DIST_DIR", "")) if os.getenv("FRONTEND_DIST_DIR") else (
+        Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+    )
+    if dist_dir.is_dir():
+        app.mount("/", StaticFiles(directory=str(dist_dir), html=True), name="frontend")
