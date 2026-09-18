@@ -89,7 +89,7 @@ export function Landing({ onEnter }: Props) {
         {step.key === "views" && (
           <div className="landing-panel landing-panel-wide">
             <p className="landing-kicker">Inside Gaia</p>
-            <h2 className="landing-h2">Four views, one workflow.</h2>
+            <h2 className="landing-h2">Five views, one workflow.</h2>
             {/* All four at once; hovering or tabbing to one reveals what it does. */}
             <div className="landing-actions">
               {GAIA_ACTIONS.map((a) => (
