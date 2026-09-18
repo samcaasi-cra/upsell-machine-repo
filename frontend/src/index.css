@@ -181,6 +181,30 @@ a {
 .home-link:hover {
   color: var(--series-1);
 }
+
+/* Deliberately not styled like the nav tiles -- this switches to an internal-only
+   view, not one of Gaia's five customer-facing actions. */
+.internal-toggle {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.internal-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--series-1);
+}
+.internal-toggle[aria-pressed="true"] {
+  color: var(--series-1);
+  border-style: solid;
+  border-color: var(--series-1);
+}
 .nav-tab-wide:hover {
   border-color: var(--series-1);
 }
@@ -201,6 +225,22 @@ a {
 .settings-menu {
   position: relative;
   display: inline-flex;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.theme-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--series-1);
 }
 .settings-menu-trigger {
   display: inline-flex;

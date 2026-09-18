@@ -105,3 +105,30 @@ export function SettingsIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function SunIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M8 0.8v1.8M8 13.4v1.8M15.2 8h-1.8M2.6 8H0.8M13.13 2.87l-1.27 1.27M4.14 11.86l-1.27 1.27M13.13 13.13l-1.27-1.27M4.14 4.14 2.87 2.87"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function MoonIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M13.6 9.9A6 6 0 1 1 6.1 2.4a4.7 4.7 0 0 0 7.5 7.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

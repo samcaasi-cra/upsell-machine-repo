@@ -71,6 +71,18 @@ export function AgentChat() {
         <div>
           <h2>Ask</h2>
         </div>
+        {turns.length > 0 && (
+          <button
+            type="button"
+            className="opp-btn"
+            onClick={() => {
+              setTurns([]);
+              setError(null);
+            }}
+          >
+            New chat
+          </button>
+        )}
       </header>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>

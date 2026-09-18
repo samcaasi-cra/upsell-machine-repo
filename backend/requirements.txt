@@ -15,5 +15,9 @@ lxml==5.3.0
 # Powers Today, Ask, and the automated research extraction.
 openai>=2.0.0
 
+# Service-account auth for the live CR tracker Google Sheet (optional -- falls back to
+# the local .xlsx if CR_TRACKER_SHEET_ID isn't set).
+google-auth==2.35.0
+
 # Exposes the agent tools over the Model Context Protocol (see MCP.md).
 mcp>=2.0.0

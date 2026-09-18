@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
-import { GAIA_ACTIONS, type Tab } from "./actions";
+import { GAIA_ACTIONS, INTERNAL_ACTION, type Tab } from "./actions";
 import { api, authToken } from "./api/client";
 import { AgentChat } from "./components/AgentChat";
 import {
   loadAudience,
   loadFontScale,
+  loadTheme,
   loadViewMode,
   useFontScale,
+  useTheme,
   type Audience,
+  type Theme,
   type ViewMode,
 } from "./components/BoardControls";
 import { Landing } from "./components/Landing";
 import { CrTrackerView } from "./components/CrTrackerView";
 import { LoginScreen } from "./components/LoginScreen";
+import { MoonIcon, SunIcon } from "./components/icons";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import { PartnerFitView } from "./components/PartnerFitView";
 import { SettingsMenu } from "./components/SettingsMenu";
@@ -78,8 +82,11 @@ function Dashboard({ tab, setTab, onHome }: { tab: Tab; setTab: (t: Tab) => void
   const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
   const [audience, setAudience] = useState<Audience>(loadAudience);
+  const [theme, setTheme] = useState<Theme>(loadTheme);
+  const internal = tab === "cr-tracker";
 
   useFontScale(fontScale);
+  useTheme(theme);
 
   return (
     <div style={{ maxWidth: 1320, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -99,33 +106,55 @@ function Dashboard({ tab, setTab, onHome }: { tab: Tab; setTab: (t: Tab) => void
             </p>
           </div>
 
-          <SettingsMenu
-            audience={audience}
-            onAudience={setAudience}
-            viewMode={viewMode}
-            onViewMode={setViewMode}
-            fontScale={fontScale}
-            onFontScale={setFontScale}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              type="button"
+              className="internal-toggle"
+              aria-pressed={internal}
+              onClick={() => setTab(internal ? "opportunities" : "cr-tracker")}
+              title={INTERNAL_ACTION.subtitle}
+            >
+              {internal ? "← Back to customer view" : "Internal: " + INTERNAL_ACTION.title}
+            </button>
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+            </button>
+            <SettingsMenu
+              audience={audience}
+              onAudience={setAudience}
+              viewMode={viewMode}
+              onViewMode={setViewMode}
+              fontScale={fontScale}
+              onFontScale={setFontScale}
+            />
+          </div>
         </div>
 
-        <nav className="nav-tabs" aria-label="View">
-          {GAIA_ACTIONS.map((a) => (
-            <button
-              key={a.tab}
-              type="button"
-              className="nav-tab-wide"
-              aria-pressed={tab === a.tab}
-              onClick={() => setTab(a.tab)}
-            >
-              <span className="nav-tab-num">{a.number}</span>
-              <span className="nav-tab-text">
-                <span className="nav-tab-title">{a.title}</span>
-                {a.subtitle !== a.title && <span className="nav-tab-sub">{a.subtitle}</span>}
-              </span>
-            </button>
-          ))}
-        </nav>
+        {!internal && (
+          <nav className="nav-tabs" aria-label="View">
+            {GAIA_ACTIONS.map((a) => (
+              <button
+                key={a.tab}
+                type="button"
+                className="nav-tab-wide"
+                aria-pressed={tab === a.tab}
+                onClick={() => setTab(a.tab)}
+              >
+                <span className="nav-tab-num">{a.number}</span>
+                <span className="nav-tab-text">
+                  <span className="nav-tab-title">{a.title}</span>
+                  {a.subtitle !== a.title && <span className="nav-tab-sub">{a.subtitle}</span>}
+                </span>
+              </button>
+            ))}
+          </nav>
+        )}
       </header>
 
       {/* All four views are always mounted, just hidden via CSS when not the active

@@ -355,8 +355,10 @@
   color: var(--accent);
 }
 .info-pop-panel {
-  position: absolute;
-  top: calc(100% + 6px);
+  /* top/left are set inline per-instance (InfoPopover.tsx), computed from the
+     trigger's actual viewport position -- fixed, not absolute, so a lane's own
+     overflow-y: auto (.opp-lane-body) can't clip it for cards below the fold. */
+  position: fixed;
   width: max(200px, min(260px, 60vw));
   background: var(--ink);
   color: var(--surface);
@@ -366,15 +368,9 @@
   padding: 9px 11px;
   border-radius: 6px;
   box-shadow: var(--shadow);
-  z-index: 35;
+  z-index: 1000;
   text-transform: none;
   letter-spacing: normal;
-}
-.info-pop-panel-left {
-  left: 0;
-}
-.info-pop-panel-right {
-  right: 0;
 }
 .opp-source-pop-head {
   display: block;

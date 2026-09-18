@@ -33,7 +33,10 @@ const LOOP = [
 const VALUES = [
   { title: "A person decides", body: "Nothing reaches a customer until a CSM approves it." },
   { title: "Every signal shows its source", body: "Each card names the API call or article behind it." },
-  { title: "Identities masked", body: "Customer names become labels before the AI sees them." },
+  {
+    title: "Never dressed up as more than it is",
+    body: "Every card is marked live, researched, sample or not-yet-built — a placeholder is never shown as if it were real data.",
+  },
   { title: "Built on SecurityScorecard", body: "Scores and supplier risk come straight from the API." },
 ];
 

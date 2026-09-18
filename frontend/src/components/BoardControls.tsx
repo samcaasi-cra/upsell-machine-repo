@@ -2,15 +2,37 @@ import { useEffect } from "react";
 
 export type ViewMode = "default" | "detailed" | "compact";
 export type Audience = "csm" | "customer";
+export type Theme = "light" | "dark";
 
 const FONT_SCALES = [87.5, 100, 112.5, 125] as const;
 const FONT_STORAGE_KEY = "gaia.fontScalePct";
 const VIEW_STORAGE_KEY = "gaia.viewMode";
 const AUDIENCE_STORAGE_KEY = "gaia.audience";
+const THEME_STORAGE_KEY = "gaia.theme";
 
+// Bumped from 100 -- the default board reads small at arm's length (a demo screen,
+// a laptop across a table), and every surface here is already sized in rem so this
+// one change scales the whole app rather than needing per-component tuning.
 export function loadFontScale(): number {
   const raw = Number(localStorage.getItem(FONT_STORAGE_KEY));
-  return FONT_SCALES.includes(raw as (typeof FONT_SCALES)[number]) ? raw : 100;
+  return FONT_SCALES.includes(raw as (typeof FONT_SCALES)[number]) ? raw : 112.5;
+}
+
+/** No stored choice yet -- follow the OS, same as the CSS's own
+ * @media (prefers-color-scheme: dark) fallback (index.css, OpportunityBoard.css). */
+export function loadTheme(): Theme {
+  const raw = localStorage.getItem(THEME_STORAGE_KEY);
+  if (raw === "light" || raw === "dark") return raw;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+/** Sets data-theme on <html>, which both index.css's global tokens and
+ * OpportunityBoard.css's .opp-board-scoped tokens key off of. */
+export function useTheme(theme: Theme) {
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 }
 
 export function loadViewMode(): ViewMode {

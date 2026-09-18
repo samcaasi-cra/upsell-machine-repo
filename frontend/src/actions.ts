@@ -59,16 +59,20 @@ export const GAIA_ACTIONS: GaiaAction[] = [
     title: "Partner fit",
     subtitle: "Which customers are ready for a SecurityScorecard partner product",
     explainer:
-      "The same signals, asked a different question: which customer needs a partner product rather than a Titan upgrade. Cytactic first, with the rule that fired printed next to every name.",
+      "The same signals, one more question alongside the Titan case: who's also ready for a partner product. Cytactic's rules are live; EY and Grip are next.",
     payoff: "Partner conversations CSMs would never have time to find.",
   },
-  {
-    tab: "cr-tracker",
-    number: 6,
-    title: "Our accounts",
-    subtitle: "Cyber Rescue's own tracking: who we haven't met, and who is overdue",
-    explainer:
-      "Internal view over Cyber Rescue's working spreadsheet: meetings coming up, who has gone longest without one, who has no next action planned.",
-    payoff: "The follow-ups that quietly slip.",
-  },
 ];
+
+/* Cyber Rescue's own account tracking is internal -- not a customer-facing growth
+   signal, so it doesn't belong alongside the five actions above as a peer tile. It's
+   reached through a separate toggle in the dashboard header instead. */
+export const INTERNAL_ACTION: GaiaAction = {
+  tab: "cr-tracker",
+  number: 6,
+  title: "Our accounts",
+  subtitle: "Cyber Rescue's own tracking: who we haven't met, and who is overdue",
+  explainer:
+    "Internal view over Cyber Rescue's working spreadsheet: meetings coming up, who has gone longest without one, who has no next action planned.",
+  payoff: "The follow-ups that quietly slip.",
+};

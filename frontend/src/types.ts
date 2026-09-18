@@ -244,10 +244,12 @@ export interface CrTrackerFirm {
   status: string;
   owner: string;
   next_action: string;
+  next_action_entries: string[];
   renewal_date: string;
   last_meeting: string;
   days_since: number | null;
   next_meeting?: string;
+  frozen: boolean;
 }
 
 export interface CrTrackerBoard {
@@ -255,7 +257,7 @@ export interface CrTrackerBoard {
   detail?: string;
   generated_at: string;
   source: string;
-  counts: { firms: number; with_meeting_history: number; upcoming_events: number };
+  counts: { firms: number; with_meeting_history: number; upcoming_events: number; frozen_excluded: number };
   caveats: string[];
   never_met: CrTrackerFirm[];
   never_met_total: number;
