@@ -109,6 +109,76 @@ that source is.
 
 ---
 
+## Signal catalogue — every signal that can drive an upsell
+
+The full list of what Gaia can surface today, the play attached to each one, and the
+exact source of the data behind it. Grouped by the four lanes the board uses. Status is
+the tier from the table above: **Live** (SecurityScorecard API), **Researched** (public
+sources, cached), **Sample** (real logic, placeholder input), **Mockup** (illustrative
+card, no logic), **Concept** (not built; off by default).
+
+### Change in score — proof of value
+
+| Signal | The play | Source | Status |
+|---|---|---|---|
+| Significant score increase (>5pts/30d or >10pts/182d) | Cite the gain as renewal proof | `GET /companies/{domain}/history/score` | **Live** |
+| Top score within their industry | Tell their executives they lead their peer group | `GET /companies/{domain}`, compared across tracked customers | **Live** |
+| Score up a lot, with a supplier still at risk | Celebrate, then pivot to residual supplier risk to justify more slots | Score history + `vendor-detection` | **Live** |
+| Supplier portfolio average rising | Cite the portfolio gain in their board update | Per-customer supplier portfolios | Concept #15 |
+| Fewer high-risk suppliers | Review what worked, repeat portfolio-wide | Per-customer supplier portfolios | Concept #14 |
+| SSC anticipated a breach before disclosure | Cite the early warning at the next board review | Breach event feed + retrospective join | Concept #8 |
+| Measurable avoided costs | Document avoided costs ahead of renewal | Agreed ROI model | Concept #9 |
+
+### Change in usage — adoption signals
+
+| Signal | The play | Source | Status |
+|---|---|---|---|
+| Nearing the licensed vendor-slot cap (≥85%) | Send an upgrade quote before they hit the cap | Platform usage | **Sample** |
+| Suppliers added to monitoring, trending up | Upgrade conversation | Platform usage | **Sample** |
+| High platform engagement | Offer advanced views; ask for a reference | Platform usage | **Sample** |
+| New user logs in for the first time | Welcome them; invite senior users to a review | Platform usage | **Sample** |
+| No platform activity in 7 days | Invite them to an Executive Business Review | Platform usage | **Sample** |
+| Usage trending down | Re-anchor on value before it becomes a renewal risk | Platform usage | **Sample** |
+| High questionnaire volume | Recommend Titan MAX to manage the response volume | Platform usage | **Sample** |
+| Questionnaire capacity running low | Flag before it limits their vendor assessments | Platform usage | **Sample** |
+| Unused questionnaires expiring soon | Remind them to use them before they lapse | Platform usage | **Sample** |
+| Last year's purchase as an anchor | Revisit the prior purchase as an upsell anchor | Customer roster seed data | **Sample** |
+| On a discount, usage justifies an uplift | Revisit the discount at renewal rather than rolling it over | Usage + discount seed data | **Sample** |
+| On a discount, usage doesn't yet justify removing it | Hold the discount | Usage + discount seed data | **Sample** |
+
+### Change in risk
+
+| Signal | The play | Source | Status |
+|---|---|---|---|
+| Supplier breach anticipated | Warn early; propose more monitoring | `GET /vendor-detection/{domain}/third-party` | **Live** |
+| Close peer breach anticipated | Share the lesson; review their own exposure | SSC scores across tracked customers, anonymised | **Live** |
+| New regulation affects their industry | Run a supplier gap check ahead of the rule | Regulatory tracking feed | Concept #4 |
+
+### Change at the customer — engagement prompts
+
+| Signal | The play | Source | Status |
+|---|---|---|---|
+| Acquisition announced | Recommend more slots — the acquisition expands their supplier footprint | Google News RSS → gpt-4o-mini extraction | **Researched** |
+| New office or region | Offer to cover the new office's suppliers | Google News RSS → extraction | **Researched** |
+| New product or service launch | Offer to map the new product's suppliers | Google News RSS → extraction | **Researched** |
+| New stakeholder identified | Introduce the team to the new decision-maker | Decision-maker research prompt, cached | **Researched** |
+| New CISO who used Titan MAX elsewhere | Fast-track a MAX conversation | Cross-customer decision-maker diffing | **Researched** |
+| Email correspondence | Follow up on their question | Email integration | Mockup |
+| Salesforce signal | Reach out ahead of the renewal window | CRM integration | Mockup |
+| Support tickets | Ensure a positive resolution | Ticketing integration | Mockup |
+| Satisfaction survey | Cite a strong response as renewal proof | Survey tool | Mockup |
+| Decision-maker posts about cyber | Comment on the post — a timely touch | Social listening | Concept #20 |
+| Someone outside the DMU posts about cyber | A possible champion to cultivate | Social listening | Concept #22 |
+| Compliment in the customer forum | Thank them; float a reference conversation | Forum tool access | Concept #18 |
+| Upcoming CSM review | Confirm attendees for the review | Salesforce / calendar | Concept #23 |
+| Share price up against peers | Revisit deferred coverage — budget headroom likely | Market data API | Concept #16 |
+
+**What one connection unlocks:** every **Sample** row above is waiting on the same
+thing — a read-only platform usage feed. That single integration turns 12 signals from
+placeholder to live, and it is the largest single gain available.
+
+---
+
 ## Trigger coverage: 13 built, all 23 represented
 
 Against the ranked trigger list in *"Automate customer engagement opportunities to
