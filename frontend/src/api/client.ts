@@ -6,6 +6,7 @@ import type {
   DecisionMakerRecord,
   NewsRecord,
   OpportunityBoardResponse,
+  PartnerFitBoard,
   QueuedAction,
   SuccessPlan,
 } from "../types";
@@ -132,6 +133,7 @@ export const api = {
     }>("/research-status"),
   runResearchNow: () => request<{ status: string; detail?: string }>("/research-run-now", { method: "POST" }),
   listSuccessPlans: () => request<SuccessPlan[]>("/success-plans"),
+  getPartnerFit: () => request<PartnerFitBoard>("/partner-fit"),
   autoResearchDecisionMakers: (customerId: string) =>
     request<DecisionMakerRecord>(`/customers/${customerId}/decision-makers/auto-research`, { method: "POST" }),
   autoResearchNews: (customerId: string) =>

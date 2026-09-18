@@ -1,7 +1,7 @@
 /* The four things a CSM can do in Gaia. Defined once so the landing page, the guided
    tour and the dashboard's tab bar all describe each action the same way. */
 
-export type Tab = "opportunities" | "today" | "ask" | "success-plan";
+export type Tab = "opportunities" | "today" | "ask" | "success-plan" | "partner-fit";
 
 export interface GaiaAction {
   tab: Tab;
@@ -52,5 +52,14 @@ export const GAIA_ACTIONS: GaiaAction[] = [
     explainer:
       "For one customer: what they're trying to fix, what was agreed to measure, and everything that moved in the last 30 days.",
     payoff: "A plan that reflects this week, not the kickoff call.",
+  },
+  {
+    tab: "partner-fit",
+    number: 5,
+    title: "Partner fit",
+    subtitle: "Which customers are ready for a SecurityScorecard partner product",
+    explainer:
+      "The same signals, asked a different question: which customer needs a partner product rather than a Titan upgrade. Cytactic first, with the rule that fired printed next to every name.",
+    payoff: "Partner conversations CSMs would never have time to find.",
   },
 ];

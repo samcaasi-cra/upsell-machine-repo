@@ -209,3 +209,28 @@ export interface SuccessPlan {
   summary: string;
   changes: SuccessPlanChange[];
 }
+
+export interface PartnerFitReason {
+  weight: number;
+  text: string;
+  source: string;
+  tier: "live" | "researched";
+}
+
+export interface PartnerFitRow {
+  customer_id: string;
+  customer_name: string;
+  domain: string;
+  partner_id: string;
+  fit_score: number;
+  reasons: PartnerFitReason[];
+  recipient_role: string;
+  talk_track: string;
+}
+
+export interface PartnerFitBoard {
+  generated_at: string;
+  partners: { id: string; name: string; sells: string; status: "live" | "upcoming" }[];
+  rules: string[];
+  rows: PartnerFitRow[];
+}

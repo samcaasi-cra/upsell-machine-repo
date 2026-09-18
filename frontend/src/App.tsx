@@ -13,6 +13,7 @@ import {
 import { Landing } from "./components/Landing";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
+import { PartnerFitView } from "./components/PartnerFitView";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { SpinnerBlock } from "./components/Spinner";
 import { SuccessPlanView } from "./components/SuccessPlanView";
@@ -142,6 +143,9 @@ function Dashboard({ tab, setTab, onHome }: { tab: Tab; setTab: (t: Tab) => void
       </div>
       <div style={{ display: tab === "success-plan" ? "block" : "none" }}>
         <SuccessPlanView />
+      </div>
+      <div style={{ display: tab === "partner-fit" ? "block" : "none" }}>
+        <PartnerFitView />
       </div>
     </div>
   );

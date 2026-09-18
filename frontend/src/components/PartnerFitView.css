@@ -1,0 +1,175 @@
+/* Partner fit: a ranked list, not a board. Styled from the global tokens so it sits
+   beside the other views without importing the board's scoped palette. */
+
+.pf {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 22px 24px 28px;
+}
+
+.pf-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+}
+.pf-head h2 {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  margin: 0;
+}
+.pf-sub {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+.pf-partners {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pf-partner-stub {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.pf-rules {
+  margin: 16px 0 4px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.pf-rules summary {
+  cursor: pointer;
+  color: var(--series-1);
+  font-weight: 600;
+}
+.pf-rules ul {
+  margin: 10px 0 8px;
+  padding-left: 18px;
+}
+.pf-rules li {
+  margin-bottom: 4px;
+}
+.pf-rules p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.pf-rows {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pf-row {
+  display: flex;
+  gap: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.pf-rank {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--series-1);
+  min-width: 1.6rem;
+}
+.pf-body {
+  flex: 1;
+  min-width: 0;
+}
+.pf-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.pf-row-head h3 {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  margin: 0;
+}
+.pf-fit {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.pf-reasons {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.pf-reasons li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.94rem;
+}
+.pf-tier {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 7px;
+  flex: none;
+}
+.pf-tier-live {
+  background: rgba(12, 163, 12, 0.14);
+  color: var(--status-good);
+}
+.pf-tier-researched {
+  background: rgba(84, 34, 255, 0.12);
+  color: var(--series-1);
+}
+.pf-reason-text {
+  color: var(--text-primary);
+}
+.pf-source {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pf-track,
+.pf-recipient {
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.pf-recipient {
+  margin-top: 6px;
+}
+
+.pf-error {
+  color: var(--status-critical);
+}
+
+@media (max-width: 700px) {
+  .pf {
+    padding: 18px 16px 22px;
+  }
+  .pf-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

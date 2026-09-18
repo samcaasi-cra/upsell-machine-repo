@@ -16,6 +16,7 @@ from .routers import (
     decision_makers,
     news,
     opportunities,
+    partners,
     scores,
     success_plans,
     upsell,
@@ -57,6 +58,7 @@ app.include_router(upsell.router)
 app.include_router(opportunities.router)
 app.include_router(agent.router)
 app.include_router(success_plans.router)
+app.include_router(partners.router)
 
 
 @app.get("/health")
