@@ -47,6 +47,9 @@
 .landing-panel-hero {
   max-width: 48rem;
 }
+.landing-panel-wide {
+  max-width: 72rem;
+}
 
 .landing-kicker {
   font-size: 0.78rem;
@@ -128,15 +131,70 @@
   color: var(--text-secondary);
 }
 
-/* One of the four views */
-.landing-panel-action .landing-action-num {
-  display: block;
+/* The four views, side by side. Each tile holds its explanation hidden until hover or
+   keyboard focus, so the screen reads as four choices rather than four paragraphs. */
+.landing-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 44px;
+  text-align: left;
+}
+.landing-action {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px 20px;
+  min-height: 252px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.landing-action-num {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: clamp(4rem, 10vw, 7rem);
+  font-size: 2.8rem;
   line-height: 1;
   color: var(--series-1);
-  margin-bottom: 8px;
+}
+.landing-action-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-top: 12px;
+}
+.landing-action-more {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.landing-action-go {
+  font-weight: 600;
+  color: var(--series-1);
+}
+.landing-action:hover,
+.landing-action:focus-visible {
+  border-color: var(--series-1);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -22px rgba(84, 34, 255, 0.45);
+}
+.landing-action:hover .landing-action-more,
+.landing-action:focus-visible .landing-action-more {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: none) {
+  .landing-action-more {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .landing-values {
@@ -232,11 +290,33 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .landing-action,
+  .landing-action-more {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .landing-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .landing-loop,
-  .landing-values {
+  .landing-values,
+  .landing-actions {
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
+  }
+  .landing-action {
+    min-height: 0;
+  }
+  .landing-action-more {
+    opacity: 1;
+    transform: none;
   }
   .landing-values {
     gap: 1px;

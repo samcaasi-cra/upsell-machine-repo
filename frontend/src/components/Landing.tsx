@@ -13,13 +13,7 @@ interface Props {
   onEnter: (tab: Tab) => void;
 }
 
-const STEPS = [
-  { key: "hero" },
-  { key: "how" },
-  ...GAIA_ACTIONS.map((a) => ({ key: a.tab, action: a })),
-  { key: "trust" },
-  { key: "purpose" },
-] as const;
+const STEPS = [{ key: "hero" }, { key: "how" }, { key: "views" }, { key: "trust" }, { key: "purpose" }] as const;
 
 const LOOP = [
   {
@@ -89,15 +83,23 @@ export function Landing({ onEnter }: Props) {
           </div>
         )}
 
-        {"action" in step && step.action && (
-          <div className="landing-panel landing-panel-action">
-            <p className="landing-kicker">
-              View {step.action.number} of {GAIA_ACTIONS.length}
-            </p>
-            <span className="landing-action-num">{step.action.number}</span>
-            <h2 className="landing-h2">{step.action.title}</h2>
-            <p className="landing-body">{step.action.explainer}</p>
-            <p className="landing-payoff">{step.action.payoff}</p>
+        {step.key === "views" && (
+          <div className="landing-panel landing-panel-wide">
+            <p className="landing-kicker">Inside Gaia</p>
+            <h2 className="landing-h2">Four views, one workflow.</h2>
+            {/* All four at once; hovering or tabbing to one reveals what it does. */}
+            <div className="landing-actions">
+              {GAIA_ACTIONS.map((a) => (
+                <div className="landing-action" key={a.tab} tabIndex={0}>
+                  <span className="landing-action-num">{a.number}</span>
+                  <span className="landing-action-title">{a.title}</span>
+                  <span className="landing-action-more">
+                    <span>{a.explainer}</span>
+                    <span className="landing-action-go">{a.payoff}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
