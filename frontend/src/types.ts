@@ -236,3 +236,33 @@ export interface PartnerFitBoard {
   rules: string[];
   rows: PartnerFitRow[];
 }
+
+export interface CrTrackerFirm {
+  firm: string;
+  website: string;
+  relationship: string;
+  status: string;
+  owner: string;
+  next_action: string;
+  renewal_date: string;
+  last_meeting: string;
+  days_since: number | null;
+  next_meeting?: string;
+}
+
+export interface CrTrackerBoard {
+  configured: boolean;
+  detail?: string;
+  generated_at: string;
+  source: string;
+  counts: { firms: number; with_meeting_history: number; upcoming_events: number };
+  caveats: string[];
+  never_met: CrTrackerFirm[];
+  never_met_total: number;
+  upcoming: CrTrackerFirm[];
+  upcoming_total: number;
+  longest_gap: CrTrackerFirm[];
+  longest_gap_total: number;
+  no_next_action: CrTrackerFirm[];
+  no_next_action_total: number;
+}

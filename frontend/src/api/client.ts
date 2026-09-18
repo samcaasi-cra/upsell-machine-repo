@@ -5,6 +5,7 @@ import type {
   CustomerSummary,
   DecisionMakerRecord,
   NewsRecord,
+  CrTrackerBoard,
   OpportunityBoardResponse,
   PartnerFitBoard,
   QueuedAction,
@@ -134,6 +135,7 @@ export const api = {
   runResearchNow: () => request<{ status: string; detail?: string }>("/research-run-now", { method: "POST" }),
   listSuccessPlans: () => request<SuccessPlan[]>("/success-plans"),
   getPartnerFit: () => request<PartnerFitBoard>("/partner-fit"),
+  getCrTracker: () => request<CrTrackerBoard>("/cr-tracker"),
   autoResearchDecisionMakers: (customerId: string) =>
     request<DecisionMakerRecord>(`/customers/${customerId}/decision-makers/auto-research`, { method: "POST" }),
   autoResearchNews: (customerId: string) =>

@@ -11,6 +11,7 @@ import {
   type ViewMode,
 } from "./components/BoardControls";
 import { Landing } from "./components/Landing";
+import { CrTrackerView } from "./components/CrTrackerView";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import { PartnerFitView } from "./components/PartnerFitView";
@@ -146,6 +147,9 @@ function Dashboard({ tab, setTab, onHome }: { tab: Tab; setTab: (t: Tab) => void
       </div>
       <div style={{ display: tab === "partner-fit" ? "block" : "none" }}>
         <PartnerFitView />
+      </div>
+      <div style={{ display: tab === "cr-tracker" ? "block" : "none" }}>
+        <CrTrackerView />
       </div>
     </div>
   );

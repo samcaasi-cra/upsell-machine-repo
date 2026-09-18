@@ -45,3 +45,7 @@ Upselling Automation Dashboard.backup.pptx
 # Contains hardcoded live-looking API keys (SSC token + OpenAI key) -- never commit.
 # Left in place at the user's request rather than stripped/edited.
 Cyber_Rescue_Supply_Chain_Crisis_Response_Plan.ipynb
+
+# Cyber Rescue internal customer tracker (client names, meetings, owners).
+# Never commit: sensitive commercial + personal data. Lives here, stays local.
+backend/private/

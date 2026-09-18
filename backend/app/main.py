@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from . import auth, config
 from .routers import (
     agent,
+    cr,
     customers,
     decision_makers,
     news,
@@ -59,6 +60,7 @@ app.include_router(opportunities.router)
 app.include_router(agent.router)
 app.include_router(success_plans.router)
 app.include_router(partners.router)
+app.include_router(cr.router)
 
 
 @app.get("/health")
