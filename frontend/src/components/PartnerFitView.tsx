@@ -14,6 +14,18 @@ import "./PartnerFitView.css";
 export function PartnerFitView() {
   const [board, setBoard] = useState<PartnerFitBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+      window.setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setCopied(null);
+    }
+  };
 
   useEffect(() => {
     api
@@ -82,9 +94,39 @@ export function PartnerFitView() {
               <p className="pf-track">
                 <strong>Talk track:</strong> {row.talk_track}
               </p>
-              <p className="pf-recipient">
-                Send to: <strong>{row.recipient_role}</strong>
-              </p>
+
+              <div className="pf-actions">
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-primary"
+                  aria-expanded={openRow === row.customer_id}
+                  onClick={() => setOpenRow(openRow === row.customer_id ? null : row.customer_id)}
+                >
+                  {openRow === row.customer_id ? "Hide draft" : "Draft the intro"}
+                </button>
+                <span className="pf-recipient">
+                  to <strong>{row.recipient_role}</strong>
+                </span>
+              </div>
+
+              {openRow === row.customer_id && (
+                <div className="pf-draft">
+                  <p className="pf-draft-subject">
+                    <strong>Subject:</strong> {row.subject}
+                  </p>
+                  <pre className="pf-draft-body">{row.body}</pre>
+                  <div className="pf-actions">
+                    <button
+                      type="button"
+                      className="pf-btn"
+                      onClick={() => copy(row.customer_id, `Subject: ${row.subject}\n\n${row.body}`)}
+                    >
+                      {copied === row.customer_id ? "Copied" : "Copy email"}
+                    </button>
+                    <span className="pf-note">Template, not generated — a CSM edits and sends it.</span>
+                  </div>
+                </div>
+              )}
             </div>
           </li>
         ))}

@@ -226,6 +226,8 @@ export interface PartnerFitRow {
   reasons: PartnerFitReason[];
   recipient_role: string;
   talk_track: string;
+  subject: string;
+  body: string;
 }
 
 export interface PartnerFitBoard {

@@ -80,6 +80,7 @@ def _cytactic_reasons(
             {
                 "weight": 3,
                 "text": f"{worst['company']} in their supply chain is scoring {worst['score']}",
+                "email_text": f"{worst['company']}, a supplier in your footprint, is scoring {worst['score']} on SecurityScorecard",
                 "source": "SecurityScorecard vendor-detection API",
                 "tier": "live",
             }
@@ -95,6 +96,7 @@ def _cytactic_reasons(
             {
                 "weight": 2,
                 "text": f"Their own score is down {abs(drop)} points over {window}",
+                "email_text": f"your own score is down {abs(drop)} points over the last {window}",
                 "source": "SecurityScorecard score history",
                 "tier": "live",
             }
@@ -108,6 +110,7 @@ def _cytactic_reasons(
                 {
                     "weight": 2,
                     "text": f"Acquisition in the last {_NEWS_WINDOW_DAYS} days: {event.headline}",
+                    "email_text": f"your recent acquisition ({event.headline}) brings a new set of suppliers with it",
                     "source": "News research",
                     "tier": "researched",
                 }
@@ -121,12 +124,30 @@ def _cytactic_reasons(
             {
                 "weight": 2,
                 "text": f"New security leader identified: {new_leaders[0].title}",
+                "email_text": f"your new {new_leaders[0].title} may want to review incident readiness early",
                 "source": "Decision-maker research",
                 "tier": "researched",
             }
         )
 
     return reasons
+
+
+def _draft_body(row: dict) -> str:
+    """A template, not a generated email -- the same approach the board's cards use.
+    It opens on the customer's own evidence and only then names the partner."""
+    evidence = "\n".join(f"- {r.get('email_text') or r['text']}" for r in row["reasons"])
+    return (
+        f"Hello,\n\n"
+        f"A couple of things we're seeing on your account:\n\n"
+        f"{evidence}\n\n"
+        f"None of these are emergencies, but together they're the kind of situation worth "
+        f"rehearsing before it happens rather than during. We work with Cytactic, who run "
+        f"tabletop exercises for exactly this: a supplier incident, walked through with your "
+        f"team, so the decisions are made in advance.\n\n"
+        f"Worth a short call to see whether it would be useful?\n\n"
+        f"Kind regards"
+    )
 
 
 def build_partner_fit() -> dict:
@@ -153,6 +174,10 @@ def build_partner_fit() -> dict:
                 ),
             }
         )
+
+    for row in rows:
+        row["subject"] = f"A tabletop exercise for {row['customer_name']}'s biggest supplier risk"
+        row["body"] = _draft_body(row)
 
     rows.sort(key=lambda r: (-r["fit_score"], r["customer_name"]))
     return {
