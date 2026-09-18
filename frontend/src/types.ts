@@ -234,6 +234,7 @@ export interface PartnerFitBoard {
   generated_at: string;
   partners: { id: string; name: string; sells: string; status: "live" | "upcoming" }[];
   rules: string[];
+  scoring_note: string;
   rows: PartnerFitRow[];
 }
 

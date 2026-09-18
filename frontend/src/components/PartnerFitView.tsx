@@ -65,6 +65,7 @@ export function PartnerFitView() {
             <li key={r}>{r}</li>
           ))}
         </ul>
+        <p>{board.scoring_note}</p>
         <p>
           No new data is collected for this view. It re-reads the signals already on the board and asks which partner
           conversation they justify.
