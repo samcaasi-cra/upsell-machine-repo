@@ -82,21 +82,25 @@
 }
 .landing-btn:focus-visible,
 .landing-action:focus-visible,
-.tour-try:focus-visible,
 .tour-close:focus-visible,
-.landing-scroll:focus-visible {
+.landing-skip:focus-visible {
   outline: 2px solid var(--series-1);
   outline-offset: 3px;
 }
 
-.landing-scroll {
-  position: absolute;
-  bottom: 28px;
-  font-size: 0.85rem;
+/* The one alternative to the tour, kept visually quiet on purpose. */
+.landing-skip {
+  font: inherit;
+  font-size: 0.9rem;
+  margin-top: 20px;
+  background: none;
+  border: none;
   color: var(--text-muted);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
 }
-.landing-scroll:hover {
+.landing-skip:hover {
   color: var(--text-primary);
 }
 
@@ -195,7 +199,6 @@
   min-height: 300px;
   display: flex;
   flex-direction: column;
-  cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .landing-action-num {
@@ -306,16 +309,6 @@
   color: var(--text-secondary);
   margin: 0 auto 16px;
   max-width: 38rem;
-}
-.tour-try {
-  font: inherit;
-  font-weight: 600;
-  margin-top: 12px;
-  background: none;
-  border: none;
-  color: var(--series-1);
-  cursor: pointer;
-  font-size: 1.05rem;
 }
 .tour-nav {
   position: absolute;

@@ -67,17 +67,16 @@ export function Landing({ onEnter }: Props) {
         <p className="landing-lede reveal">
           Finds the moment a customer is ready to grow — and hands your CSM the next move.
         </p>
+        {/* One way in: the tour. The skip link exists for people who have seen it
+            before, and is deliberately quiet so it doesn't read as a second option. */}
         <div className="landing-ctas reveal">
           <button type="button" className="landing-btn primary" onClick={() => setTouring(true)}>
-            Start the tour
-          </button>
-          <button type="button" className="landing-btn" onClick={() => onEnter("opportunities")}>
-            Open Gaia
+            Take the 60-second tour
           </button>
         </div>
-        <a className="landing-scroll" href="#landing-how" aria-label="Scroll to how Gaia works">
-          How it works ↓
-        </a>
+        <button type="button" className="landing-skip reveal" onClick={() => onEnter("opportunities")}>
+          Skip to the dashboard
+        </button>
       </section>
 
       <section className="landing-section" id="landing-how">
@@ -117,18 +116,20 @@ export function Landing({ onEnter }: Props) {
       </section>
 
       <section className="landing-section">
-        <p className="landing-kicker reveal">Four ways in</p>
-        <h2 className="landing-h2 reveal">Pick where to start.</h2>
+        <p className="landing-kicker reveal">Inside Gaia</p>
+        <h2 className="landing-h2 reveal">Four views, one workflow.</h2>
+        {/* Explanation, not navigation: hovering reveals what each view does. The only
+            way in is the tour, which ends by opening the dashboard. */}
         <div className="landing-actions">
           {GAIA_ACTIONS.map((a) => (
-            <button type="button" className="landing-action reveal" key={a.tab} onClick={() => onEnter(a.tab)}>
+            <div className="landing-action reveal" key={a.tab} tabIndex={0}>
               <span className="landing-action-num">{a.number}</span>
               <span className="landing-action-title">{a.title}</span>
               <span className="landing-action-more">
                 <span>{a.explainer}</span>
-                <span className="landing-action-go">Open {a.title} →</span>
+                <span className="landing-action-go">{a.payoff}</span>
               </span>
-            </button>
+            </div>
           ))}
         </div>
       </section>
@@ -136,11 +137,8 @@ export function Landing({ onEnter }: Props) {
       <section className="landing-section landing-final">
         <h2 className="landing-h2 reveal">Ready when you are.</h2>
         <div className="landing-ctas reveal">
-          <button type="button" className="landing-btn primary" onClick={() => onEnter("today")}>
-            See today's top signals
-          </button>
-          <button type="button" className="landing-btn" onClick={() => setTouring(true)}>
-            Take the tour
+          <button type="button" className="landing-btn primary" onClick={() => setTouring(true)}>
+            Take the 60-second tour
           </button>
         </div>
       </section>
@@ -207,11 +205,6 @@ function Tour({ onClose, onEnter }: { onClose: () => void; onEnter: (tab: Tab) =
             {p}
           </p>
         ))}
-        {"tab" in slide && slide.tab && (
-          <button type="button" className="tour-try" onClick={() => onEnter(slide.tab as Tab)}>
-            Open this now →
-          </button>
-        )}
       </div>
       <div className="tour-nav">
         <button type="button" className="landing-btn" onClick={() => setI(i - 1)} disabled={i === 0}>
