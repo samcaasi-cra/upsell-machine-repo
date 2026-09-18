@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GAIA_ACTIONS, type Tab } from "./actions";
 import { api, authToken } from "./api/client";
 import { AgentChat } from "./components/AgentChat";
 import {
@@ -9,6 +10,7 @@ import {
   type Audience,
   type ViewMode,
 } from "./components/BoardControls";
+import { Landing } from "./components/Landing";
 import { LoginScreen } from "./components/LoginScreen";
 import { OpportunityBoard } from "./components/OpportunityBoard";
 import { SettingsMenu } from "./components/SettingsMenu";
@@ -38,13 +40,39 @@ function App() {
     return <LoginScreen onSignedIn={() => setSignedIn(true)} />;
   }
 
-  return <Dashboard />;
+  return <Shell />;
 }
 
-type Tab = "opportunities" | "today" | "ask" | "success-plan";
-
-function Dashboard() {
+/* Landing page first; the dashboard mounts in the background so its data is already
+   loading while the viewer reads the intro. */
+function Shell() {
+  const [showLanding, setShowLanding] = useState(true);
   const [tab, setTab] = useState<Tab>("opportunities");
+
+  const enter = (t: Tab) => {
+    setTab(t);
+    setShowLanding(false);
+    window.scrollTo(0, 0);
+  };
+
+  return (
+    <>
+      {showLanding && <Landing onEnter={enter} />}
+      <div style={{ display: showLanding ? "none" : "block" }}>
+        <Dashboard
+          tab={tab}
+          setTab={setTab}
+          onHome={() => {
+            setShowLanding(true);
+            window.scrollTo(0, 0);
+          }}
+        />
+      </div>
+    </>
+  );
+}
+
+function Dashboard({ tab, setTab, onHome }: { tab: Tab; setTab: (t: Tab) => void; onHome: () => void }) {
   const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
   const [audience, setAudience] = useState<Audience>(loadAudience);
@@ -56,7 +84,11 @@ function Dashboard() {
       <header style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 26, fontFamily: "var(--font-heading)" }}>Gaia</h1>
+            <h1 style={{ margin: 0, fontSize: 26, fontFamily: "var(--font-heading)" }}>
+              <button type="button" className="home-link" onClick={onHome} title="Back to the Gaia intro">
+                Gaia
+              </button>
+            </h1>
             <p style={{ margin: "4px 0 0 0", color: "var(--text-secondary)", fontSize: 14 }}>
               AI Agent to help CSMs upsell to increase ARR
             </p>
@@ -76,20 +108,19 @@ function Dashboard() {
         </div>
 
         <nav className="nav-tabs" aria-label="View">
-          {([
-            ["opportunities", "1. Best action recommendations this month to drive growth across customers"],
-            ["today", '2. Today’s top new signals of ‘We’re ready to buy’'],
-            ["ask", "3. Ask Gaia any question about your customers"],
-            ["success-plan", "4. Joint success plan"],
-          ] as [Tab, string][]).map(([key, label]) => (
+          {GAIA_ACTIONS.map((a) => (
             <button
-              key={key}
+              key={a.tab}
               type="button"
               className="nav-tab-wide"
-              aria-pressed={tab === key}
-              onClick={() => setTab(key)}
+              aria-pressed={tab === a.tab}
+              onClick={() => setTab(a.tab)}
             >
-              {label}
+              <span className="nav-tab-num">{a.number}</span>
+              <span className="nav-tab-text">
+                <span className="nav-tab-title">{a.title}</span>
+                {a.subtitle !== a.title && <span className="nav-tab-sub">{a.subtitle}</span>}
+              </span>
             </button>
           ))}
         </nav>
