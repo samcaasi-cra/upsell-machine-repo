@@ -84,15 +84,15 @@ function Dashboard({ tab, setTab, onHome }: { tab: Tab; setTab: (t: Tab) => void
       <header style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 26, fontFamily: "var(--font-heading)" }}>
+            <h1 className="app-wordmark">
               <button type="button" className="home-link" onClick={onHome} title="Back to the Gaia intro">
                 Gaia
               </button>
             </h1>
-            <p style={{ margin: "4px 0 0 0", color: "var(--text-secondary)", fontSize: 14 }}>
+            <p style={{ margin: "6px 0 0 0", color: "var(--text-secondary)", fontSize: 17 }}>
               AI Agent to help CSMs upsell to increase ARR
             </p>
-            <p style={{ margin: "2px 0 0 0", color: "var(--text-muted)", fontSize: 12 }}>
+            <p style={{ margin: "3px 0 0 0", color: "var(--text-muted)", fontSize: 14 }}>
               Initiate sales motion on the best signal detected by the AI
             </p>
           </div>

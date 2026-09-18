@@ -159,6 +159,17 @@ a {
   outline: 2px solid var(--series-1);
   outline-offset: 2px;
 }
+/* The dashboard's own wordmark -- sized so "Gaia" still reads as the product name
+   next to the tab tiles, which are now large. */
+.app-wordmark {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 3.4vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
 .home-link {
   font: inherit;
   color: inherit;
