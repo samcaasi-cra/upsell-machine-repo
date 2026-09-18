@@ -184,23 +184,34 @@ def build_partner_fit() -> dict:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "partners": PARTNERS,
         "rules": [
-            "A supplier in their footprint scores 50 or below (weight 3) — the closest thing "
-            "to a live incident, so the clearest reason to rehearse one before it happens.",
-            "Their own score has fallen 5+ points in 30 days, or 10+ in 6 months (weight 2) — "
-            "a declining posture is often the first sign leadership is already worried about "
-            "readiness.",
-            f"An acquisition in the last {_NEWS_WINDOW_DAYS} days (weight 2) — new estate to "
-            "defend, and an existing crisis plan that doesn't cover it yet.",
-            "A new CISO or BISO has been identified (weight 2) — new security leaders "
-            "typically review incident readiness early in their tenure.",
+            {
+                "signal": "Supplier at risk",
+                "weight": 3,
+                "why": "The closest thing to a live incident — the clearest reason to "
+                "rehearse one before it happens.",
+            },
+            {
+                "signal": "Score declining",
+                "weight": 2,
+                "why": "5+ points in 30 days, or 10+ in 6 months. Often the first sign "
+                "leadership is already worried about readiness.",
+            },
+            {
+                "signal": "Recent acquisition",
+                "weight": 2,
+                "why": f"Within the last {_NEWS_WINDOW_DAYS} days. New estate to defend, "
+                "and an existing crisis plan that doesn't cover it yet.",
+            },
+            {
+                "signal": "New CISO / BISO",
+                "weight": 2,
+                "why": "New security leaders typically review incident readiness early "
+                "in their tenure.",
+            },
         ],
         "scoring_note": (
-            "Fit score is the sum of every reason's weight — an account with two weight-2 "
-            "reasons outranks one with a single weight-3, since two independent signals are "
-            "stronger evidence than one. The supplier-risk weight is highest because it's the "
-            "only one of the four that's a live, unambiguous risk rather than a leading "
-            "indicator. Accounts with none of these four reasons aren't shown at all — this "
-            "isn't every customer ranked, it's only the ones with a stated reason to reach out."
+            "Fit score sums every matched reason's weight — two weight-2 reasons outrank "
+            "one weight-3. Accounts matching none of the above aren't shown at all."
         ),
         "rows": rows,
     }

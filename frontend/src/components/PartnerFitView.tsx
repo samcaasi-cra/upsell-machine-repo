@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { PartnerFitBoard } from "../types";
+import { InfoPopover } from "./InfoPopover";
 import { SpinnerBlock } from "./Spinner";
 import "./PartnerFitView.css";
 
@@ -9,13 +10,18 @@ import "./PartnerFitView.css";
    The signals are the same ones the board already detects -- this view answers a
    different question with them: not "what changed at this account" but "which partner
    conversation does that change justify". The rules are printed on screen so a CSM can
-   disagree with the ranking rather than take it on trust. */
+   disagree with the ranking rather than take it on trust -- as a compact legend with the
+   reasoning a click away, not a wall of text, matching how the rest of the app handles
+   "short by default, detail on demand" everywhere else. */
+
+type SortBy = "fit" | "name";
 
 export function PartnerFitView() {
   const [board, setBoard] = useState<PartnerFitBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortBy>("fit");
 
   const copy = async (id: string, text: string) => {
     try {
@@ -33,6 +39,12 @@ export function PartnerFitView() {
       .then(setBoard)
       .catch((e) => setError(e instanceof Error ? e.message : "Couldn't load partner fit."));
   }, []);
+
+  const rows = useMemo(() => {
+    if (!board) return [];
+    if (sortBy === "name") return [...board.rows].sort((a, b) => a.customer_name.localeCompare(b.customer_name));
+    return board.rows; // already fit-score sorted by the backend
+  }, [board, sortBy]);
 
   if (error) return <p className="pf-error">{error}</p>;
   if (!board) return <SpinnerBlock minHeight={200} />;
@@ -58,30 +70,42 @@ export function PartnerFitView() {
         </div>
       </header>
 
-      <details className="pf-rules">
-        <summary>How this list is ranked</summary>
-        <ul>
-          {board.rules.map((r) => (
-            <li key={r}>{r}</li>
-          ))}
-        </ul>
-        <p>{board.scoring_note}</p>
-        <p>
-          No new data is collected for this view. It re-reads the signals already on the board and asks which partner
-          conversation they justify.
-        </p>
-      </details>
+      <div className="pf-legend">
+        <span className="pf-legend-label">Ranked by:</span>
+        {board.rules.map((r) => (
+          <span className="pf-legend-chip" key={r.signal}>
+            {r.signal}
+            <b>{r.weight}</b>
+            <InfoPopover label={`Why "${r.signal}" counts`} align="left">
+              <span className="opp-source-pop-head">{r.signal}</span>
+              {r.why}
+            </InfoPopover>
+          </span>
+        ))}
+        <InfoPopover label="How the total is calculated" align="left">
+          <span className="opp-source-pop-head">Scoring</span>
+          {board.scoring_note}
+        </InfoPopover>
+      </div>
+
+      <div className="pf-sort" role="group" aria-label="Sort by">
+        {(["fit", "name"] as SortBy[]).map((s) => (
+          <button key={s} type="button" className="pf-sort-btn" aria-pressed={sortBy === s} onClick={() => setSortBy(s)}>
+            {s === "fit" ? "Fit score" : "Name"}
+          </button>
+        ))}
+      </div>
 
       <ol className="pf-rows">
-        {board.rows.map((row, i) => (
+        {rows.map((row) => (
           <li className="pf-row" key={row.customer_id}>
-            <span className="pf-rank">{i + 1}</span>
+            <span className="pf-fit" title="Fit score — higher means more reasons, weighted">
+              <b>{row.fit_score}</b>
+              fit
+            </span>
             <div className="pf-body">
               <div className="pf-row-head">
                 <h3>{row.customer_name}</h3>
-                <span className="pf-fit" title="Higher means more reasons, weighted">
-                  fit {row.fit_score}
-                </span>
               </div>
               <ul className="pf-reasons">
                 {row.reasons.map((r) => (

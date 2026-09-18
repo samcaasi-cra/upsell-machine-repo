@@ -230,10 +230,16 @@ export interface PartnerFitRow {
   body: string;
 }
 
+export interface PartnerFitRule {
+  signal: string;
+  weight: number;
+  why: string;
+}
+
 export interface PartnerFitBoard {
   generated_at: string;
   partners: { id: string; name: string; sells: string; status: "live" | "upcoming" }[];
-  rules: string[];
+  rules: PartnerFitRule[];
   scoring_note: string;
   rows: PartnerFitRow[];
 }
