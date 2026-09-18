@@ -71,7 +71,7 @@ export function PartnerFitView() {
       </header>
 
       <div className="pf-legend">
-        <span className="pf-legend-label">Ranked by:</span>
+        <span className="pf-legend-label">Scoring signals:</span>
         {board.rules.map((r) => (
           <span className="pf-legend-chip" key={r.signal}>
             {r.signal}
@@ -89,6 +89,7 @@ export function PartnerFitView() {
       </div>
 
       <div className="pf-sort" role="group" aria-label="Sort by">
+        <span className="pf-legend-label">Sort:</span>
         {(["fit", "name"] as SortBy[]).map((s) => (
           <button key={s} type="button" className="pf-sort-btn" aria-pressed={sortBy === s} onClick={() => setSortBy(s)}>
             {s === "fit" ? "Fit score" : "Name"}
