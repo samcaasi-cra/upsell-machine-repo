@@ -24,6 +24,19 @@ Survey with list_customers, then call get_customer_detail on the three accounts 
 most need attention today. Base the ranking on what the data actually shows -- score
 movement, signals that fired, capacity limits, stakeholder changes, recent news.
 
+What the fields mean, so you read them the right way round:
+- "New vendors added to monitoring" counts suppliers the customer has put INTO
+  SecurityScorecard. More of them means deeper adoption of what they bought -- a
+  growth signal. It is never a performance, monitoring or retention problem, and it
+  does not mean their attack surface got riskier.
+- "slots_used" against "licensed_slots" is contract capacity. Approaching the cap is
+  an upgrade conversation, not a fault.
+- A rising score is the customer succeeding; cite it as proof of value.
+- The "signal" field is the classification already made for you: "upsell" means an
+  opportunity, "retention_risk" means a risk. Do not recast an upsell as a risk.
+- Usage figures are placeholder sample data. You may use them, but never present a
+  sample number as a measured fact.
+
 For each of the three, once you've drafted its outreach, call queue_outreach with that
 draft and your one-sentence reflection before moving on to the next one -- don't wait
 until the end to queue all three.

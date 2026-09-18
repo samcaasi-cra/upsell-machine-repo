@@ -72,7 +72,12 @@ def build_signal(
         if usage.slots_delta_7d > 0:
             upsell_reasons.append(f"New vendors added to monitoring, trending up (+{usage.slots_delta_7d} vs. prior week)")
         elif usage.slots_delta_7d < -2:
-            risk_reasons.append(f"New vendors added to monitoring slowing ({usage.slots_delta_7d} vs. prior week)")
+            # Phrased as the customer adding fewer suppliers, not as anything "slowing":
+            # the old wording read like a platform performance problem, and both the
+            # briefing agent and Ask repeated it back that way.
+            risk_reasons.append(
+                f"Customer added {abs(usage.slots_delta_7d)} fewer suppliers to monitoring than the week before"
+            )
 
         engagement_score = usage.slots_filled_7d * 3 + usage.reports_generated_7d + total_visits
         if engagement_score >= _ENGAGEMENT_THRESHOLD:
